@@ -68,4 +68,4 @@
 2. Different enemy types (keeps gameplay fresh)
 3. Between-wave shop (progression system)
 4. Power-up drops (exciting rewards for kills)
-5. Skill tree/upgrades (long-term progression)
+5. Skill tree/upgrades (long-term progression)  
