@@ -724,6 +724,27 @@
 
         const player = createHumanoid(0x2196f3);
         scene.add(player);
+        
+        // Create held knife for player's right hand
+        const heldKnife = new THREE.Group();
+        const heldBlade = new THREE.Mesh(
+            new THREE.BoxGeometry(0.06, 0.3, 0.015),
+            new THREE.MeshStandardMaterial({ color: 0xc0c0c0, metalness: 0.8, roughness: 0.2 })
+        );
+        heldBlade.position.y = 0.12;
+        heldKnife.add(heldBlade);
+        const heldHandle = new THREE.Mesh(
+            new THREE.BoxGeometry(0.05, 0.12, 0.025),
+            new THREE.MeshStandardMaterial({ color: 0x3d2817, roughness: 0.7, metalness: 0.1 })
+        );
+        heldHandle.position.y = -0.06;
+        heldKnife.add(heldHandle);
+        heldKnife.position.set(0, -0.35, 0);  // At hand (end of arm)
+        heldKnife.rotation.x = -Math.PI / 2;  // Point blade forward
+        heldKnife.scale.setScalar(0.8);
+        player.userData.rightArm.add(heldKnife);
+        player.userData.heldKnife = heldKnife;
+        
         const camPivot = new THREE.Group();
         camPivot.position.y = 1.6;
         player.add(camPivot);
@@ -885,6 +906,10 @@
             updateAmmoDisplay();
             shootSound();
             
+            // Trigger throw animation
+            player.userData.isThrowing = true;
+            player.userData.throwStartTime = now;
+            
             // Create knife-shaped projectile
             const knifeGroup = new THREE.Group();
             
@@ -1019,7 +1044,36 @@
                 let targetLeftLegX = 0;
                 let targetRightLegX = 0;
                 
-                if (isMoving || isAttacking) {
+                // Throw animation (takes priority when active)
+                const throwDuration = 280;
+                const isThrowing = character.userData.isThrowing;
+                const throwStart = character.userData.throwStartTime || 0;
+                const throwElapsed = Date.now() - throwStart;
+                
+                if (isThrowing && character.userData.heldKnife) {
+                    // Hide held knife during throw (it "leaves" the hand as the projectile)
+                    character.userData.heldKnife.visible = false;
+                    if (throwElapsed >= throwDuration) {
+                        character.userData.isThrowing = false;
+                        character.userData.heldKnife.visible = true;
+                    }
+                } else if (character.userData.heldKnife) {
+                    character.userData.heldKnife.visible = (typeof activeSlot !== 'undefined' && activeSlot === 1);
+                }
+                
+                if (isThrowing && throwElapsed < throwDuration) {
+                    // Throw motion: wind up (arm back) then whip forward
+                    const t = throwElapsed / throwDuration;
+                    if (t < 0.25) {
+                        // Wind up: pull arm back
+                        targetRightArmX = (t / 0.25) * 1.4;  // Arm goes back
+                    } else {
+                        // Throw: arm snaps forward
+                        const throwPhase = (t - 0.25) / 0.75;
+                        targetRightArmX = 1.4 - throwPhase * 2.2;  // Back to forward overshoot
+                    }
+                    targetLeftArmX = -0.2;  // Slight counter-balance
+                } else if (isMoving || isAttacking) {
                     const swing = Math.sin(character.userData.animTime) * (isAttacking ? 0.6 : 0.25);
                     targetLeftArmX = swing;
                     targetRightArmX = -swing;
@@ -1031,7 +1085,7 @@
                     }
                 }
                 
-                const lerpFactor = 0.15;
+                const lerpFactor = isThrowing && throwElapsed < throwDuration ? 0.35 : 0.15;
                 if (character.userData.leftArm) {
                     character.userData.leftArm.rotation.x += (targetLeftArmX - character.userData.leftArm.rotation.x) * lerpFactor;
                 }
