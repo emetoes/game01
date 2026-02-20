@@ -1,0 +1,434 @@
+/* ==========================================================================
+   Capybara Survivor - Professional Stylesheet
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   CSS Custom Properties (Design Tokens)
+   -------------------------------------------------------------------------- */
+:root {
+  /* Colors - Brand */
+  --color-primary: #2196f3;
+  --color-primary-dark: #1976d2;
+  --color-accent: #f1c40f;
+  --color-accent-light: #ffd966;
+  
+  /* Colors - Semantic */
+  --color-success: #2ecc71;
+  --color-success-bright: #4ef037;
+  --color-danger: #ff4444;
+  --color-danger-dark: #cc0000;
+  --color-muted: #aaaaaa;
+  
+  /* Colors - UI */
+  --color-bg-game: #6eb1ff;
+  --color-bg-dark: rgba(0, 0, 0, 0.7);
+  --color-bg-darker: rgba(0, 0, 0, 0.95);
+  --color-bg-panel: rgba(0, 0, 0, 0.6);
+  --color-text: #ffffff;
+  --color-border: rgba(255, 255, 255, 0.3);
+  
+  /* Gradients */
+  --gradient-health: linear-gradient(90deg, var(--color-success-bright), var(--color-success));
+  --gradient-enemy: linear-gradient(90deg, var(--color-danger), var(--color-danger-dark));
+  --gradient-wall: linear-gradient(90deg, var(--color-primary), var(--color-primary-dark));
+  --gradient-start: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --gradient-charge: linear-gradient(90deg, #44aa99, var(--color-success));
+  
+  /* Typography */
+  --font-primary: 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  --font-display: 'Arial Black', 'Impact', sans-serif;
+  
+  --text-shadow-default: 3px 3px 6px rgba(0, 0, 0, 0.8);
+  --text-shadow-strong: 4px 4px 8px rgba(0, 0, 0, 0.8);
+  --text-shadow-soft: 2px 2px 4px rgba(0, 0, 0, 0.8);
+  
+  /* Spacing */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 10px;
+  --space-lg: 15px;
+  --space-xl: 20px;
+  --space-2xl: 40px;
+  
+  /* Layout */
+  --overlay-z: 1000;
+  --indicator-z: 100;
+  --radius-sm: 2px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-full: 50%;
+  
+  /* Transitions */
+  --transition-fast: 0.2s;
+  --transition-normal: 0.3s;
+}
+
+/* --------------------------------------------------------------------------
+   Base & Reset
+   -------------------------------------------------------------------------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  overflow: hidden;
+  background-color: var(--color-bg-game);
+  font-family: var(--font-primary);
+}
+
+/* --------------------------------------------------------------------------
+   Utility Classes
+   -------------------------------------------------------------------------- */
+.u-text-center { text-align: center; }
+.u-hidden { display: none !important; }
+.u-visible { display: block !important; }
+.u-flex-visible { display: flex !important; }
+.u-flex { display: flex; }
+.u-flex-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.u-center-h {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.u-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: var(--overlay-z);
+}
+.u-floating-indicator {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: var(--indicator-z);
+  pointer-events: none;
+  font-weight: bold;
+}
+
+/* --------------------------------------------------------------------------
+   HUD Components
+   -------------------------------------------------------------------------- */
+.hud {
+  position: absolute;
+  bottom: var(--space-xl);
+  right: var(--space-xl);
+  width: 250px;
+  padding: var(--space-lg);
+  background: var(--color-bg-dark);
+  border-radius: var(--radius-lg);
+  border-bottom: 5px solid var(--color-primary);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.hud__stat {
+  color: var(--color-text);
+  margin-top: var(--space-md);
+  text-align: center;
+}
+
+.hud__stat--ammo { font-size: 20px; }
+.hud__stat--reload { color: var(--color-accent); font-size: 16px; }
+.hud__stat--sprint { color: var(--color-success); font-size: 14px; }
+
+/* --------------------------------------------------------------------------
+   Progress Bars
+   -------------------------------------------------------------------------- */
+.bar {
+  width: 100%;
+  height: 15px;
+  background: #222;
+  margin: var(--space-xs) 0;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.bar__fill {
+  height: 100%;
+  border-radius: var(--radius-sm);
+  transition: width var(--transition-fast);
+}
+
+.bar__fill--health {
+  width: 100%;
+  background: var(--gradient-health);
+}
+
+.bar__fill--charge {
+  width: 0%;
+  background: var(--gradient-charge);
+  transition: width 0.05s;
+}
+
+.bar--charge {
+  height: 8px;
+  margin-top: var(--space-sm);
+  background: #333;
+  border-radius: var(--space-xs);
+}
+
+/* --------------------------------------------------------------------------
+   Inventory Slots
+   -------------------------------------------------------------------------- */
+.inventory {
+  position: absolute;
+  bottom: var(--space-xl);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: var(--space-md);
+}
+
+.slot {
+  width: 60px;
+  height: 60px;
+  background: var(--color-bg-panel);
+  border: 2px solid var(--color-text);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  text-align: center;
+  transition: all var(--transition-fast);
+}
+
+.slot:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.slot--active {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: var(--color-accent);
+  box-shadow: 0 0 20px var(--color-accent);
+  transform: scale(1.1);
+}
+
+/* --------------------------------------------------------------------------
+   Crosshair
+   -------------------------------------------------------------------------- */
+.crosshair {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 16px;
+  height: 16px;
+  border: 3px solid var(--color-text);
+  border-radius: var(--radius-full);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+/* --------------------------------------------------------------------------
+   World UI (floating health bars)
+   -------------------------------------------------------------------------- */
+.healthbar {
+  position: absolute;
+  width: 60px;
+  height: 6px;
+  background: var(--color-bg-dark);
+  border-radius: 3px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  display: none;
+  border: 1px solid var(--color-border);
+}
+
+.healthbar__fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width var(--transition-fast);
+}
+
+.healthbar__fill--enemy {
+  background: var(--gradient-enemy);
+}
+
+.healthbar__fill--wall {
+  background: var(--gradient-wall);
+}
+
+/* --------------------------------------------------------------------------
+   Top Bar Stats (kill counter, wave, enemies)
+   -------------------------------------------------------------------------- */
+.stat-bar {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--color-text);
+  text-shadow: var(--text-shadow-default);
+}
+
+.stat-bar--kills {
+  top: var(--space-xl);
+  font-size: 32px;
+}
+
+.stat-bar--wave {
+  top: 70px;
+  font-size: 36px;
+}
+
+.stat-bar--enemies {
+  top: 115px;
+  color: var(--color-accent);
+  font-size: 24px;
+}
+
+/* --------------------------------------------------------------------------
+   Materials Display
+   -------------------------------------------------------------------------- */
+.mats {
+  position: absolute;
+  bottom: 160px;
+  right: 25px;
+  color: var(--color-accent-light);
+  font-size: 28px;
+  text-shadow: var(--text-shadow-default);
+}
+
+/* --------------------------------------------------------------------------
+   Modal Overlays (Start Screen, Game Over)
+   -------------------------------------------------------------------------- */
+.modal {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--overlay-z);
+}
+
+.modal--start {
+  background: var(--gradient-start);
+}
+
+.modal--game-over {
+  background: var(--color-bg-darker);
+  display: none;
+}
+
+.modal--game-over.is-visible {
+  display: flex;
+}
+
+.modal__title {
+  color: var(--color-text);
+  margin-bottom: var(--space-xl);
+  text-shadow: 4px 4px 8px rgba(0, 0, 0, 0.5);
+}
+
+.modal__title--lg {
+  font-size: 72px;
+  font-family: var(--font-display);
+}
+
+.modal__title--xl {
+  font-size: 96px;
+  color: var(--color-danger);
+  text-shadow: var(--text-shadow-strong);
+}
+
+.modal__subtitle {
+  color: var(--color-text);
+  font-size: 24px;
+  margin-bottom: var(--space-2xl);
+}
+
+.modal__stat {
+  color: var(--color-accent);
+  font-size: 36px;
+  margin-bottom: var(--space-md);
+  text-shadow: var(--text-shadow-soft);
+}
+
+.modal__stat--secondary {
+  color: var(--color-text);
+  font-size: 28px;
+  margin-bottom: var(--space-xl);
+}
+
+.modal__hint {
+  color: var(--color-muted);
+  font-size: 20px;
+}
+
+/* --------------------------------------------------------------------------
+   Buttons
+   -------------------------------------------------------------------------- */
+.btn {
+  padding: var(--space-xl) 60px;
+  font-size: 32px;
+  font-family: var(--font-display);
+  background: var(--color-accent);
+  border: none;
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  color: #1a1a1a;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+  transition: transform var(--transition-fast);
+}
+
+.btn:hover {
+  transform: scale(1.1);
+}
+
+/* --------------------------------------------------------------------------
+   Transient Indicators (for JS-created elements)
+   -------------------------------------------------------------------------- */
+.indicator {
+  position: absolute;
+  z-index: var(--indicator-z);
+  pointer-events: none;
+  font-weight: bold;
+}
+
+.indicator--center {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.indicator--headshot {
+  color: var(--color-danger);
+  font-size: 48px;
+  text-shadow: var(--text-shadow-default);
+}
+
+.indicator--wave-complete {
+  color: var(--color-accent);
+  font-size: 48px;
+  text-shadow: var(--text-shadow-strong);
+}
+
+.indicator--heal {
+  bottom: 100px;
+  right: 30px;
+  color: var(--color-success-bright);
+  font-size: 24px;
+  text-shadow: var(--text-shadow-soft);
+}
+
+.indicator--fade-out {
+  transition: opacity 0.5s, transform 0.5s;
+}
+
+.indicator--fade-out.is-exiting {
+  opacity: 0 !important;
+}
