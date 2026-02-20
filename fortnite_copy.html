@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Fortnite Style Movement Prototype</title>
+    <style>
+        body { margin: 0; overflow: hidden; font-family: sans-serif; }
+        #instructions {
+            position: absolute;
+            top: 50%; width: 100%;
+            text-align: center;
+            color: white;
+            background: rgba(0,0,0,0.5);
+            padding: 20px;
+            cursor: pointer;
+            z-index: 10;
+        }
+        #crosshair {
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 10px; height: 10px;
+            background: white;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            border: 2px solid black;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="instructions">
+        <h1>CLICK TO START</h1>
+        <p>W,A,S,D to Move | MOUSE to Look | SPACE to Jump</p>
+    </div>
+    <div id="crosshair"></div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+
+        // --- 1. SETUP SCENE ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x87CEEB); // Sky Blue
+        scene.fog = new THREE.Fog(0x87CEEB, 10, 50);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        document.body.appendChild(renderer.domElement);
+
+        // --- 2. LIGHTING ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight.position.set(10, 20, 10);
+        dirLight.castShadow = true;
+        scene.add(dirLight);
+
+        // --- 3. OBJECTS ---
+        
+        // The Floor (Grid)
+        const geometry = new THREE.PlaneGeometry(100, 100);
+        const material = new THREE.MeshStandardMaterial({ 
+            color: 0x228b22, // Forest Green
+            side: THREE.DoubleSide 
+        });
+        const floor = new THREE.Mesh(geometry, material);
+        floor.rotation.x = -Math.PI / 2;
+        floor.receiveShadow = true;
+        scene.add(floor);
+
+        // Add a grid helper for perspective
+        const gridHelper = new THREE.GridHelper(100, 50);
+        scene.add(gridHelper);
+
+        // The Player (A simple capsule/box)
+        const playerGeo = new THREE.CapsuleGeometry(0.5, 1, 4, 8);
+        const playerMat = new THREE.MeshStandardMaterial({ color: 0x9932CC }); // Purple
+        const player = new THREE.Mesh(playerGeo, playerMat);
+        player.position.y = 1;
+        player.castShadow = true;
+        scene.add(player);
+
+        // Camera Pivot (This allows the camera to rotate around the player)
+        const cameraPivot = new THREE.Object3D();
+        player.add(cameraPivot);
+        cameraPivot.position.y = 1.0; // Eye level
+
+        // Offset the camera behind the player (Third Person View)
+        cameraPivot.add(camera);
+        camera.position.set(0, 0.5, 3.5); // Back and slightly up
+
+        // --- 4. MOVEMENT VARIABLES ---
+        const keys = { w: false, a: false, s: false, d: false, space: false };
+        let velocity = new THREE.Vector3();
+        let direction = new THREE.Vector3();
+        let canJump = false;
+        const speed = 0.15;
+        
+        // Mouse look variables
+        let pitch = 0;
+        let yaw = 0;
+
+        // --- 5. EVENT LISTENERS ---
+        
+        // Key Controls
+        document.addEventListener('keydown', (event) => {
+            switch(event.code) {
+                case 'KeyW': keys.w = true; break;
+                case 'KeyA': keys.a = true; break;
+                case 'KeyS': keys.s = true; break;
+                case 'KeyD': keys.d = true; break;
+                case 'Space': 
+                    if(canJump) {
+                        velocity.y = 0.3; 
+                        canJump = false;
+                    }
+                    break;
+            }
+        });
+
+        document.addEventListener('keyup', (event) => {
+            switch(event.code) {
+                case 'KeyW': keys.w = false; break;
+                case 'KeyA': keys.a = false; break;
+                case 'KeyS': keys.s = false; break;
+                case 'KeyD': keys.d = false; break;
+            }
+        });
+
+        // Pointer Lock (Click to capture mouse)
+        const instructions = document.getElementById('instructions');
+        
+        instructions.addEventListener('click', () => {
+            document.body.requestPointerLock();
+        });
+
+        document.addEventListener('pointerlockchange', () => {
+            if (document.pointerLockElement === document.body) {
+                instructions.style.display = 'none';
+            } else {
+                instructions.style.display = 'block';
+            }
+        });
+
+        // Mouse Movement Logic
+        document.addEventListener('mousemove', (event) => {
+            if (document.pointerLockElement === document.body) {
+                // Rotate Player (Left/Right)
+                player.rotation.y -= event.movementX * 0.002;
+
+                // Rotate Camera Pivot (Up/Down) - Clamped so you don't flip over
+                pitch -= event.movementY * 0.002;
+                pitch = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, pitch));
+                cameraPivot.rotation.x = pitch;
+            }
+        });
+
+        // --- 6. GAME LOOP ---
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Forward/Backward Movement
+            direction.z = Number(keys.w) - Number(keys.s);
+            // Left/Right Strafe
+            direction.x = Number(keys.a) - Number(keys.d);
+            direction.normalize(); // Ensure consistent speed diagonally
+
+            if (keys.w || keys.s) {
+                player.translateZ(direction.z * speed);
+            }
+            if (keys.a || keys.d) {
+                player.translateX(-direction.x * speed);
+            }
+
+            // Gravity & Jumping Physics
+            player.position.y += velocity.y;
+
+            // Simple Floor Collision
+            if (player.position.y <= 1) { // 1 is half the player height (capsule radius + cylinder half height)
+                velocity.y = 0;
+                player.position.y = 1;
+                canJump = true;
+            } else {
+                velocity.y -= 0.01; // Gravity
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        // Handle Window Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+    </script>
+</body>
+</html>
