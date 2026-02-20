@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Game Unit Tests - Sprint & Headshots</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1a1a1a; color: #fff; }
+        .pass { color: #4ef037; }
+        .fail { color: #ff4444; font-weight: bold; }
+        .test-group { margin-bottom: 20px; border-left: 2px solid #444; padding-left: 15px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <h1>System Test Results</h1>
+    <div id="results"></div>
+
+    <script>
+        const resultsDiv = document.getElementById('results');
+        function assert(name, condition) {
+            const el = document.createElement('div');
+            el.innerHTML = condition ? `<span class="pass">✔ PASS</span>: ${name}` : `<span class="fail">✘ FAIL</span>: ${name}`;
+            resultsDiv.appendChild(el);
+        }
+
+        // --- NEW TESTS ---
+
+        function testSprinting() {
+            const baseSpeed = 0.15;
+            const sprintMultiplier = 1.6;
+            
+            const getSpeed = (isShiftDown) => isShiftDown ? baseSpeed * sprintMultiplier : baseSpeed;
+
+            assert("Walking speed is 0.15", getSpeed(false) === 0.15);
+            assert("Sprinting speed is 0.24", getSpeed(true) === 0.24);
+        }
+
+        function testHeadshotDamage() {
+            const baseDamage = 34;
+            const calculateDamage = (bulletY, enemyY) => {
+                const isHeadshot = bulletY >= enemyY + 1.3;
+                return isHeadshot ? baseDamage * 2 : baseDamage;
+            };
+
+            assert("Body shot (Y=1.0) deals 34 damage", calculateDamage(1.0, 0) === 34);
+            assert("Headshot (Y=1.5) deals 68 damage", calculateDamage(1.5, 0) === 68);
+        }
+
+        function testWaveScaling() {
+    // This matches the exact logic in spawnEnemy()
+    const getHealth = (wave) => {
+        const waveMultiplier = 1 + (wave - 1) * 0.15;
+        return Math.floor(100 * waveMultiplier);
+    };
+
+    assert("Wave 1 health is 100", getHealth(1) === 100);
+    // 1 + (9 * 0.15) = 2.35. 100 * 2.35 = 235.
+    assert("Wave 10 health is 235", getHealth(10) === 235);
+}
+
+        // Run Suite
+        console.log("Starting tests...");
+        testSprinting();
+        testHeadshotDamage();
+        testWaveScaling();
+    </script>
+</body>
+</html>

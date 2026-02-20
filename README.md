@@ -1,1 +1,3 @@
-# game01
+This is Emmet's fun game... someday... I guess...
+
+-Emmet
