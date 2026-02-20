@@ -30,14 +30,16 @@
     <div id="wave-counter" style="position: absolute; top: 70px; left: 50%; transform: translateX(-50%); color: white; font-size: 36px; text-shadow: 3px 3px 6px rgba(0,0,0,0.8);">WAVE: 1</div>
     <div id="enemies-remaining" style="position: absolute; top: 115px; left: 50%; transform: translateX(-50%); color: #f1c40f; font-size: 24px; text-shadow: 3px 3px 6px rgba(0,0,0,0.8);">ENEMIES: 5</div>
     <div id="inventory">
-        <div id="slot1" class="slot active">1<br>GUN</div>
-        <div id="slot2" class="slot">2<br>PICKAXE</div>
+        <div id="slot1" class="slot active">1<br>KNIFE</div>
+        <div id="slot2" class="slot">2<br>BOW</div>
+        <div id="slot3" class="slot">3<br>SPEAR</div>
+        <div id="slot4" class="slot">4<br>AXE</div>
         <div class="slot">Q<br>RAMP</div>
         <div class="slot">E<br>WALL</div>
     </div>
     <div id="hud">
         <div class="bar-container"><div id="health-bar"></div></div>
-        <div id="ammo-display" style="color: white; font-size: 20px; margin-top: 10px; text-align: center;">AMMO: 30/90</div>
+        <div id="ammo-display" style="color: white; font-size: 20px; margin-top: 10px; text-align: center;">KNIFE: 30/90</div>
         <div id="reload-prompt" style="color: #f1c40f; font-size: 16px; margin-top: 5px; text-align: center; display: none;">Press R to Reload</div>
         <div id="sprint-indicator" style="color: #2ecc71; font-size: 14px; margin-top: 5px; text-align: center; display: none;">SPRINTING</div>
     </div>
@@ -308,6 +310,8 @@
         const updateThreshold = renderDistance * 0.15; // 15% of render distance
         const terrainChunks = new Map(); // Store active chunks
         let lastPlayerChunkPos = { x: 0, z: 0 }; // Track when to update terrain
+        const SPAWN_CLEAR_RADIUS = 6; // No trees within this distance of spawn (0,0)
+        const TREE_COLLISION_RADIUS = 0.9; // Player-tree min distance (tree ~0.4 + player ~0.5)
         
         function getChunkKey(chunkX, chunkZ) {
             return `${chunkX},${chunkZ}`;
@@ -362,6 +366,10 @@
                 
                 const treeX = chunkX * chunkSize + pseudoRandom1 * chunkSize;
                 const treeZ = chunkZ * chunkSize + pseudoRandom2 * chunkSize;
+                
+                // Don't place trees near player spawn
+                const distToSpawn = Math.sqrt(treeX * treeX + treeZ * treeZ);
+                if (distToSpawn < SPAWN_CLEAR_RADIUS) continue;
                 
                 const tree = createTreeAt(treeX, treeZ);
                 chunk.trees.push(tree);
@@ -745,6 +753,65 @@
         player.userData.rightArm.add(heldKnife);
         player.userData.heldKnife = heldKnife;
         
+        // Create held bow
+        const heldBow = new THREE.Group();
+        const bowRiser = new THREE.Mesh(
+            new THREE.BoxGeometry(0.04, 0.5, 0.06),
+            new THREE.MeshStandardMaterial({ color: 0x4a3728, roughness: 0.8, metalness: 0.1 })
+        );
+        bowRiser.position.y = 0;
+        heldBow.add(bowRiser);
+        heldBow.position.set(0, -0.35, 0);
+        heldBow.rotation.x = Math.PI / 4;
+        heldBow.rotation.z = -Math.PI / 6;
+        heldBow.scale.setScalar(0.9);
+        heldBow.visible = false;
+        player.userData.rightArm.add(heldBow);
+        player.userData.heldBow = heldBow;
+        
+        // Create held spear
+        const heldSpear = new THREE.Group();
+        const spearShaft = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.02, 0.025, 0.7, 8),
+            new THREE.MeshStandardMaterial({ color: 0x8b4513, roughness: 0.7, metalness: 0.1 })
+        );
+        spearShaft.position.y = 0.2;
+        heldSpear.add(spearShaft);
+        const spearHead = new THREE.Mesh(
+            new THREE.ConeGeometry(0.03, 0.15, 6),
+            new THREE.MeshStandardMaterial({ color: 0x808080, metalness: 0.6, roughness: 0.3 })
+        );
+        spearHead.position.y = 0.55;
+        heldSpear.add(spearHead);
+        heldSpear.position.set(0, -0.35, 0);
+        heldSpear.rotation.x = -Math.PI / 2;
+        heldSpear.scale.setScalar(0.8);
+        heldSpear.visible = false;
+        player.userData.rightArm.add(heldSpear);
+        player.userData.heldSpear = heldSpear;
+        
+        // Create held axe
+        const heldAxe = new THREE.Group();
+        const axeHandle = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.03, 0.035, 0.5, 6),
+            new THREE.MeshStandardMaterial({ color: 0x5d4037, roughness: 0.8, metalness: 0.1 })
+        );
+        axeHandle.position.y = 0.1;
+        heldAxe.add(axeHandle);
+        const axeHead = new THREE.Mesh(
+            new THREE.BoxGeometry(0.12, 0.08, 0.04),
+            new THREE.MeshStandardMaterial({ color: 0x555555, metalness: 0.7, roughness: 0.3 })
+        );
+        axeHead.position.set(0, 0.4, 0);
+        axeHead.rotation.z = Math.PI / 4;
+        heldAxe.add(axeHead);
+        heldAxe.position.set(0, -0.35, 0);
+        heldAxe.rotation.x = -Math.PI / 3;
+        heldAxe.scale.setScalar(0.9);
+        heldAxe.visible = false;
+        player.userData.rightArm.add(heldAxe);
+        player.userData.heldAxe = heldAxe;
+        
         const camPivot = new THREE.Group();
         camPivot.position.y = 1.6;
         player.add(camPivot);
@@ -760,6 +827,12 @@
         let reserveAmmo = 90;
         let maxMagSize = 30;
         let isReloading = false;
+        let currentArrows = 20;
+        let maxArrows = 50;
+        let currentSpears = 5;
+        let maxSpears = 10;
+        let lastAxeSwing = 0;
+        const axeCooldown = 800;
         let killCount = 0;
         let currentWave = 1;
         let enemiesInWave = 5;
@@ -897,7 +970,14 @@
             buildSound();
         }
 
-        function shoot() {
+        function useWeapon() {
+            if (activeSlot === 1) shootKnife();
+            else if (activeSlot === 2) shootBow();
+            else if (activeSlot === 3) throwSpear();
+            else if (activeSlot === 4) swingAxe();
+        }
+        
+        function shootKnife() {
             const now = Date.now();
             if(currentAmmo === 0 || isReloading || (now - lastShotTime < fireRate)) return;
             
@@ -906,48 +986,32 @@
             updateAmmoDisplay();
             shootSound();
             
-            // Trigger throw animation
             player.userData.isThrowing = true;
             player.userData.throwStartTime = now;
             
-            // Create knife-shaped projectile
             const knifeGroup = new THREE.Group();
-            
-            // Knife blade (long thin rectangle)
             const blade = new THREE.Mesh(
                 new THREE.BoxGeometry(0.08, 0.4, 0.02),
-                new THREE.MeshStandardMaterial({ 
-                    color: 0xc0c0c0, // Silver color
-                    metalness: 0.8,
-                    roughness: 0.2
-                })
+                new THREE.MeshStandardMaterial({ color: 0xc0c0c0, metalness: 0.8, roughness: 0.2 })
             );
             blade.position.y = 0.15;
             knifeGroup.add(blade);
-            
-            // Knife handle (darker, shorter)
             const handle = new THREE.Mesh(
                 new THREE.BoxGeometry(0.06, 0.15, 0.03),
-                new THREE.MeshStandardMaterial({ 
-                    color: 0x3d2817, // Dark brown
-                    roughness: 0.7,
-                    metalness: 0.1
-                })
+                new THREE.MeshStandardMaterial({ color: 0x3d2817, roughness: 0.7, metalness: 0.1 })
             );
             handle.position.y = -0.1;
             knifeGroup.add(handle);
             
             knifeGroup.position.copy(player.position).add(new THREE.Vector3(0, 1.5, 0));
-            
-            // Get direction and apply to knife
             const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.getWorldQuaternion(new THREE.Quaternion()));
-            
-            // Rotate knife to point in direction of travel
             knifeGroup.lookAt(knifeGroup.position.clone().add(dir));
             
             knifeGroup.userData.velocity = dir.multiplyScalar(1.2);
             knifeGroup.userData.life = 100;
-            knifeGroup.userData.rotationSpeed = 0.3; // Spinning knife effect
+            knifeGroup.userData.rotationSpeed = 0.3;
+            knifeGroup.userData.damage = 34;
+            knifeGroup.userData.gravity = 0;
             
             scene.add(knifeGroup);
             bullets.push(knifeGroup);
@@ -955,11 +1019,143 @@
             if(currentAmmo === 0 && reserveAmmo > 0) setTimeout(() => reload(), 500);
         }
         
-        // Automatic fire when holding mouse button
+        function shootBow() {
+            const now = Date.now();
+            const bowFireRate = 500;
+            if(currentArrows <= 0 || (now - lastShotTime < bowFireRate)) return;
+            
+            lastShotTime = now;
+            currentArrows--;
+            updateAmmoDisplay();
+            playSound(250, 0.15, 'sine', 0.1);
+            
+            player.userData.isThrowing = true;
+            player.userData.throwStartTime = now;
+            
+            const arrow = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.01, 0.015, 0.5, 6),
+                new THREE.MeshStandardMaterial({ color: 0x8b4513, roughness: 0.6 })
+            );
+            arrow.position.copy(player.position).add(new THREE.Vector3(0, 1.5, 0));
+            const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.getWorldQuaternion(new THREE.Quaternion()));
+            arrow.lookAt(arrow.position.clone().add(dir));
+            arrow.rotation.x += Math.PI / 2;
+            
+            arrow.userData.velocity = dir.multiplyScalar(0.9);
+            arrow.userData.life = 120;
+            arrow.userData.rotationSpeed = 0;
+            arrow.userData.damage = 50;
+            arrow.userData.gravity = -0.015;
+            
+            scene.add(arrow);
+            bullets.push(arrow);
+        }
+        
+        function throwSpear() {
+            const now = Date.now();
+            const spearFireRate = 600;
+            if(currentSpears <= 0 || (now - lastShotTime < spearFireRate)) return;
+            
+            lastShotTime = now;
+            currentSpears--;
+            updateAmmoDisplay();
+            playSound(180, 0.12, 'square', 0.1);
+            
+            player.userData.isThrowing = true;
+            player.userData.throwStartTime = now;
+            
+            const spearGroup = new THREE.Group();
+            const shaft = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.025, 0.03, 0.6, 8),
+                new THREE.MeshStandardMaterial({ color: 0x8b4513, roughness: 0.7 })
+            );
+            shaft.position.y = 0.15;
+            spearGroup.add(shaft);
+            const head = new THREE.Mesh(
+                new THREE.ConeGeometry(0.04, 0.2, 6),
+                new THREE.MeshStandardMaterial({ color: 0x808080, metalness: 0.6, roughness: 0.3 })
+            );
+            head.position.y = 0.5;
+            spearGroup.add(head);
+            
+            spearGroup.position.copy(player.position).add(new THREE.Vector3(0, 1.5, 0));
+            const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.getWorldQuaternion(new THREE.Quaternion()));
+            spearGroup.lookAt(spearGroup.position.clone().add(dir));
+            
+            spearGroup.userData.velocity = dir.multiplyScalar(1.1);
+            spearGroup.userData.life = 100;
+            spearGroup.userData.rotationSpeed = 0.2;
+            spearGroup.userData.damage = 45;
+            spearGroup.userData.gravity = 0;
+            
+            scene.add(spearGroup);
+            bullets.push(spearGroup);
+        }
+        
+        function swingAxe() {
+            const now = Date.now();
+            if (now - lastAxeSwing < axeCooldown) return;
+            lastAxeSwing = now;
+            
+            player.userData.isThrowing = true;
+            player.userData.throwStartTime = now;
+            
+            playSound(120, 0.2, 'sawtooth', 0.12);
+            
+            setTimeout(() => {
+                const axeRay = new THREE.Raycaster();
+                axeRay.setFromCamera(new THREE.Vector2(0, 0), camera);
+                const hits = axeRay.intersectObjects(enemies, true);
+                const range = 3.5;
+                
+                if (hits.length > 0 && hits[0].distance < range) {
+                    let en = hits[0].object;
+                    while (en.parent && en.parent !== scene) en = en.parent;
+                    const baseDamage = 60;
+                    en.userData.health -= baseDamage;
+                    en.userData.healthBarFill.style.width = (en.userData.health / en.userData.maxHealth * 100) + '%';
+                    hitSound();
+                    if (en.userData.health <= 0) {
+                        scene.remove(en);
+                        en.userData.healthBarElement.remove();
+                        const eIdx = enemies.indexOf(en);
+                        if (eIdx > -1) enemies.splice(eIdx, 1);
+                        killCount++;
+                        enemiesKilledThisWave++;
+                        document.getElementById('kill-counter').innerText = `ELIMINATIONS: ${killCount}`;
+                        document.getElementById('enemies-remaining').innerText = `ENEMIES: ${enemiesInWave - enemiesKilledThisWave}`;
+                        reserveAmmo = Math.min(reserveAmmo + 15, 300);
+                        wood += 20;
+                        health = Math.min(health + 5, 100);
+                        currentArrows = Math.min(currentArrows + 5, maxArrows);
+                        currentSpears = Math.min(currentSpears + 2, maxSpears);
+                        updateAmmoDisplay();
+                        document.getElementById('mats').innerText = `WOOD: ${wood}`;
+                        document.getElementById('health-bar').style.width = health + '%';
+                        if (enemiesKilledThisWave >= enemiesInWave) {
+                            currentWave++;
+                            enemiesKilledThisWave = 0;
+                            enemiesInWave = 5 + (currentWave - 1) * 2;
+                            document.getElementById('wave-counter').innerText = `WAVE: ${currentWave}`;
+                            document.getElementById('enemies-remaining').innerText = `ENEMIES: ${enemiesInWave}`;
+                            const waveMsg = document.createElement('div');
+                            waveMsg.style.cssText = 'position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #f1c40f; font-size: 48px; text-shadow: 4px 4px 8px rgba(0,0,0,0.8); z-index: 100; pointer-events: none;';
+                            waveMsg.innerText = `WAVE ${currentWave - 1} COMPLETE!`;
+                            document.body.appendChild(waveMsg);
+                            setTimeout(() => waveMsg.remove(), 2000);
+                            setTimeout(() => { for(let i=0; i<enemiesInWave; i++) spawnEnemy(); }, 3000);
+                        }
+                    }
+                }
+                
+                harvest();
+            }, 150);
+        }
+        
         function tryAutoFire() {
-            if(isMouseDown && gameStarted && document.pointerLockElement === document.body && activeSlot === 1) {
-                shoot();
-            }
+            if(!isMouseDown || !gameStarted || document.pointerLockElement !== document.body) return;
+            if (activeSlot === 1) shootKnife();
+            else if (activeSlot === 2) shootBow();
         }
 
         function harvest() {
@@ -981,8 +1177,19 @@
         }
         
         function updateAmmoDisplay() {
-            document.getElementById('ammo-display').innerText = `AMMO: ${currentAmmo}/${reserveAmmo}`;
-            document.getElementById('reload-prompt').style.display = (currentAmmo === 0 && reserveAmmo > 0) ? 'block' : 'none';
+            if (activeSlot === 1) {
+                document.getElementById('ammo-display').innerText = `KNIFE: ${currentAmmo}/${reserveAmmo}`;
+                document.getElementById('reload-prompt').style.display = (currentAmmo === 0 && reserveAmmo > 0) ? 'block' : 'none';
+            } else if (activeSlot === 2) {
+                document.getElementById('ammo-display').innerText = `ARROWS: ${currentArrows}/${maxArrows}`;
+                document.getElementById('reload-prompt').style.display = 'none';
+            } else if (activeSlot === 3) {
+                document.getElementById('ammo-display').innerText = `SPEARS: ${currentSpears}/${maxSpears}`;
+                document.getElementById('reload-prompt').style.display = 'none';
+            } else {
+                document.getElementById('ammo-display').innerText = `AXE: READY`;
+                document.getElementById('reload-prompt').style.display = 'none';
+            }
         }
         
         function reload() {
@@ -1051,14 +1258,16 @@
                 const throwElapsed = Date.now() - throwStart;
                 
                 if (isThrowing && character.userData.heldKnife) {
-                    // Hide held knife during throw (it "leaves" the hand as the projectile)
+                    // Hide active weapon during throw/release (player only)
                     character.userData.heldKnife.visible = false;
+                    if (character.userData.heldBow) character.userData.heldBow.visible = false;
+                    if (character.userData.heldSpear) character.userData.heldSpear.visible = false;
                     if (throwElapsed >= throwDuration) {
                         character.userData.isThrowing = false;
-                        character.userData.heldKnife.visible = true;
+                        updateHeldWeapon();
                     }
-                } else if (character.userData.heldKnife) {
-                    character.userData.heldKnife.visible = (typeof activeSlot !== 'undefined' && activeSlot === 1);
+                } else if (character.userData.heldKnife && !isThrowing) {
+                    updateHeldWeapon();
                 }
                 
                 if (isThrowing && throwElapsed < throwDuration) {
@@ -1121,8 +1330,10 @@
         window.onkeydown = (e) => {
             if(!gameStarted) return;
             keys[e.code] = true;
-            if(e.code === 'Digit1') { activeSlot = 1; updateInventoryUI(); }
-            if(e.code === 'Digit2') { activeSlot = 2; updateInventoryUI(); }
+            if(e.code === 'Digit1') { activeSlot = 1; updateInventoryUI(); updateHeldWeapon(); updateAmmoDisplay(); }
+            if(e.code === 'Digit2') { activeSlot = 2; updateInventoryUI(); updateHeldWeapon(); updateAmmoDisplay(); }
+            if(e.code === 'Digit3') { activeSlot = 3; updateInventoryUI(); updateHeldWeapon(); updateAmmoDisplay(); }
+            if(e.code === 'Digit4') { activeSlot = 4; updateInventoryUI(); updateHeldWeapon(); updateAmmoDisplay(); }
             if(e.code === 'KeyQ') build('ramp');
             if(e.code === 'KeyE') build('wall');
             if(e.code === 'KeyR') reload();
@@ -1132,6 +1343,15 @@
         function updateInventoryUI() {
             document.getElementById('slot1').classList.toggle('active', activeSlot === 1);
             document.getElementById('slot2').classList.toggle('active', activeSlot === 2);
+            document.getElementById('slot3').classList.toggle('active', activeSlot === 3);
+            document.getElementById('slot4').classList.toggle('active', activeSlot === 4);
+        }
+        
+        function updateHeldWeapon() {
+            player.userData.heldKnife.visible = (activeSlot === 1);
+            player.userData.heldBow.visible = (activeSlot === 2);
+            player.userData.heldSpear.visible = (activeSlot === 3);
+            player.userData.heldAxe.visible = (activeSlot === 4);
         }
 
         document.addEventListener('mousedown', () => {
@@ -1140,9 +1360,7 @@
                 document.body.requestPointerLock();
             } else {
                 isMouseDown = true;
-                // Fire immediately on first click
-                if(activeSlot === 1) shoot();
-                if(activeSlot === 2) harvest();
+                if (activeSlot >= 1 && activeSlot <= 4) useWeapon();
             }
         });
         
@@ -1169,6 +1387,8 @@
             gameStarted = true;
             audioCtx.resume();
             document.body.requestPointerLock();
+            updateHeldWeapon();
+            updateAmmoDisplay();
         });
 
         function updateUIHealthBar(mesh, offsetY = 2.2) {
@@ -1223,7 +1443,22 @@
             if(playerVelocity.length() > 0.001) {
                 const ray = new THREE.Raycaster(new THREE.Vector3(player.position.x, 0.5, player.position.z), playerVelocity.clone().normalize());
                 const hits = ray.intersectObjects([...collidables, ...rampColliders]);
-                if(!(hits.length > 0 && hits[0].distance < 0.8)) {
+                const blockedByRay = hits.length > 0 && hits[0].distance < 0.8;
+                
+                // Also check tree collision: don't allow moving into any tree's XZ radius
+                const newX = player.position.x + playerVelocity.x;
+                const newZ = player.position.z + playerVelocity.z;
+                let blockedByTree = false;
+                for (let t = 0; t < trees.length; t++) {
+                    const dx = newX - trees[t].position.x;
+                    const dz = newZ - trees[t].position.z;
+                    if (dx * dx + dz * dz < TREE_COLLISION_RADIUS * TREE_COLLISION_RADIUS) {
+                        blockedByTree = true;
+                        break;
+                    }
+                }
+                
+                if (!blockedByRay && !blockedByTree) {
                     player.position.add(playerVelocity);
                 }
             }
@@ -1368,8 +1603,10 @@
                 if(!bullets[i]) continue;
                 
                 bullets[i].position.add(bullets[i].userData.velocity);
+                if (bullets[i].userData.gravity) {
+                    bullets[i].userData.velocity.y += bullets[i].userData.gravity;
+                }
                 
-                // Add spinning rotation for knife effect
                 if(bullets[i].userData.rotationSpeed) {
                     bullets[i].rotation.x += bullets[i].userData.rotationSpeed;
                 }
@@ -1441,8 +1678,7 @@
                     
                     // Hit detected if bullet is in either hitbox
                     if(isHeadshot || isBodyHit) {
-                        
-                        const baseDamage = 34;
+                        const baseDamage = bullets[i].userData.damage || 34;
                         const damage = isHeadshot ? baseDamage * 2 : baseDamage;
                         
                         en.userData.health -= damage;
@@ -1480,6 +1716,8 @@
                             const healthReward = 5; // 5% of max health
                             
                             reserveAmmo = Math.min(reserveAmmo + ammoReward, 300);
+                            currentArrows = Math.min(currentArrows + 5, maxArrows);
+                            currentSpears = Math.min(currentSpears + 2, maxSpears);
                             wood += woodReward;
                             health = Math.min(health + healthReward, 100); // Cap at 100 max health
                             
