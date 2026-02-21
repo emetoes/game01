@@ -432,3 +432,263 @@ body {
 .indicator--fade-out.is-exiting {
   opacity: 0 !important;
 }
+
+/* --------------------------------------------------------------------------
+   Upgrade Screen
+   -------------------------------------------------------------------------- */
+.upgrade-screen {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0, 0, 0, 0.88);
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+  font-family: var(--font-primary);
+}
+
+.upgrade-screen.is-visible {
+  display: flex;
+  animation: upgradeScreenIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes upgradeScreenIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.upgrade-screen__header {
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.upgrade-screen__wave-badge {
+  display: inline-block;
+  background: linear-gradient(135deg, #f1c40f, #e67e22);
+  color: #1a1a1a;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 6px 18px;
+  border-radius: 20px;
+  margin-bottom: 12px;
+}
+
+.upgrade-screen__title {
+  color: #fff;
+  font-size: 52px;
+  font-family: var(--font-display);
+  text-shadow: 0 0 30px rgba(241, 196, 15, 0.6), var(--text-shadow-strong);
+  margin: 0 0 6px;
+  letter-spacing: 2px;
+}
+
+.upgrade-screen__subtitle {
+  color: rgba(255,255,255,0.55);
+  font-size: 16px;
+  margin: 0 0 36px;
+  letter-spacing: 1px;
+}
+
+.upgrade-cards {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  flex-wrap: wrap;
+  max-width: 980px;
+  padding: 0 20px;
+}
+
+.upgrade-card {
+  width: 260px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 16px;
+  padding: 28px 22px 24px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  border: 2px solid transparent;
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s, background 0.2s;
+  animation: cardSlideIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.upgrade-card:nth-child(1) { animation-delay: 0.05s; }
+.upgrade-card:nth-child(2) { animation-delay: 0.12s; }
+.upgrade-card:nth-child(3) { animation-delay: 0.19s; }
+
+@keyframes cardSlideIn {
+  from { opacity: 0; transform: translateY(30px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.upgrade-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--card-glow);
+  opacity: 0;
+  transition: opacity 0.25s;
+  border-radius: 14px;
+}
+
+.upgrade-card:hover {
+  transform: translateY(-6px) scale(1.03);
+  box-shadow: 0 18px 40px rgba(0,0,0,0.5), 0 0 30px var(--card-shadow);
+  border-color: var(--card-border);
+  background: rgba(255,255,255,0.1);
+}
+
+.upgrade-card:hover::before { opacity: 0.07; }
+
+.upgrade-card:active {
+  transform: translateY(-2px) scale(0.99);
+}
+
+/* Rarity variants */
+.upgrade-card--common {
+  --card-border: rgba(170,170,170,0.8);
+  --card-shadow: rgba(170,170,170,0.3);
+  --card-glow: linear-gradient(135deg, #aaaaaa, #888888);
+}
+.upgrade-card--uncommon {
+  --card-border: rgba(30,200,80,0.9);
+  --card-shadow: rgba(30,200,80,0.4);
+  --card-glow: linear-gradient(135deg, #1ec850, #16a34a);
+}
+.upgrade-card--rare {
+  --card-border: rgba(60,130,255,0.9);
+  --card-shadow: rgba(60,130,255,0.4);
+  --card-glow: linear-gradient(135deg, #3c82ff, #1d4ed8);
+}
+.upgrade-card--epic {
+  --card-border: rgba(180,60,255,0.9);
+  --card-shadow: rgba(180,60,255,0.45);
+  --card-glow: linear-gradient(135deg, #b43cff, #7e22ce);
+}
+.upgrade-card--legendary {
+  --card-border: rgba(255,165,0,0.95);
+  --card-shadow: rgba(255,165,0,0.55);
+  --card-glow: linear-gradient(135deg, #ffa500, #dc2626);
+}
+
+.upgrade-card__rarity-bar {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  border-radius: 16px 16px 0 0;
+}
+.upgrade-card--common   .upgrade-card__rarity-bar { background: linear-gradient(90deg, #aaa, #888); }
+.upgrade-card--uncommon .upgrade-card__rarity-bar { background: linear-gradient(90deg, #1ec850, #16a34a); }
+.upgrade-card--rare     .upgrade-card__rarity-bar { background: linear-gradient(90deg, #3c82ff, #1d4ed8); }
+.upgrade-card--epic     .upgrade-card__rarity-bar { background: linear-gradient(90deg, #b43cff, #7e22ce); }
+.upgrade-card--legendary .upgrade-card__rarity-bar { background: linear-gradient(90deg, #ffa500, #ff4500, #dc2626); }
+
+.upgrade-card__icon {
+  font-size: 44px;
+  margin-bottom: 12px;
+  display: block;
+  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.5));
+}
+
+.upgrade-card__rarity-label {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+}
+.upgrade-card--common   .upgrade-card__rarity-label { background: rgba(170,170,170,0.2); color: #ccc; border: 1px solid rgba(170,170,170,0.4); }
+.upgrade-card--uncommon .upgrade-card__rarity-label { background: rgba(30,200,80,0.15); color: #4ade80; border: 1px solid rgba(30,200,80,0.4); }
+.upgrade-card--rare     .upgrade-card__rarity-label { background: rgba(60,130,255,0.15); color: #60a5fa; border: 1px solid rgba(60,130,255,0.4); }
+.upgrade-card--epic     .upgrade-card__rarity-label { background: rgba(180,60,255,0.15); color: #c084fc; border: 1px solid rgba(180,60,255,0.4); }
+.upgrade-card--legendary .upgrade-card__rarity-label { background: rgba(255,165,0,0.15); color: #fbbf24; border: 1px solid rgba(255,165,0,0.5); }
+
+.upgrade-card__name {
+  color: #fff;
+  font-size: 20px;
+  font-weight: 800;
+  margin: 0 0 8px;
+  line-height: 1.2;
+  text-shadow: var(--text-shadow-soft);
+}
+
+.upgrade-card__desc {
+  color: rgba(255,255,255,0.65);
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 0 0 14px;
+}
+
+.upgrade-card__bonus {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.upgrade-card__bonus-icon {
+  font-size: 16px;
+}
+
+.upgrade-card--legendary .upgrade-card__name {
+  background: linear-gradient(90deg, #ffa500, #ff6b35);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Applies to multiple weapons badge */
+.upgrade-card__applies {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: rgba(255,255,255,0.4);
+  text-transform: uppercase;
+}
+
+/* Upgrade tracker (top-left during game) */
+.upgrade-tracker {
+  position: absolute;
+  top: 170px;
+  left: 20px;
+  background: rgba(0,0,0,0.6);
+  border-radius: 8px;
+  padding: 8px 14px;
+  border-left: 3px solid var(--color-accent);
+  color: #fff;
+  font-size: 12px;
+  min-width: 160px;
+  display: none;
+}
+.upgrade-tracker.is-visible { display: block; }
+.upgrade-tracker__title {
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--color-accent);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  font-weight: 700;
+}
+.upgrade-tracker__item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2px 0;
+  font-size: 12px;
+  color: rgba(255,255,255,0.85);
+}
+.upgrade-tracker__item span:last-child {
+  color: var(--color-success-bright);
+  font-weight: 700;
+  margin-left: 10px;
+}
