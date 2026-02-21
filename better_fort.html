@@ -9,9 +9,19 @@
 <body>
     <div id="crosshair" class="crosshair"></div>
     <div id="mats" class="mats">WOOD: 30</div>
+    <div id="coin-display" style="position:absolute;bottom:215px;right:25px;color:#f1c40f;font-size:24px;text-shadow:2px 2px 6px rgba(0,0,0,0.8);">🪙 0</div>
     <div id="kill-counter" class="stat-bar stat-bar--kills">ELIMINATIONS: 0</div>
     <div id="wave-counter" class="stat-bar stat-bar--wave">WAVE: 1</div>
     <div id="enemies-remaining" class="stat-bar stat-bar--enemies">ENEMIES: 5</div>
+
+    <!-- Active power-up indicator -->
+    <div id="powerup-display" style="position:absolute;top:160px;left:20px;display:none;background:rgba(0,0,0,0.65);border-radius:8px;padding:8px 14px;border-left:3px solid #f1c40f;color:#fff;font-size:14px;min-width:160px;">
+        <div style="font-size:10px;letter-spacing:2px;color:#f1c40f;text-transform:uppercase;font-weight:700;margin-bottom:4px;">⚡ Active Power-Up</div>
+        <div id="powerup-name" style="font-size:15px;font-weight:700;"></div>
+        <div style="height:4px;background:#333;border-radius:2px;margin-top:6px;overflow:hidden;">
+            <div id="powerup-bar" style="height:100%;background:linear-gradient(90deg,#f1c40f,#e67e22);width:100%;transition:width 0.1s;border-radius:2px;"></div>
+        </div>
+    </div>
     <div id="inventory" class="inventory">
         <div id="slot1" class="slot slot--active">1<br>KNIFE</div>
         <div id="slot2" class="slot">2<br>BOW</div>
@@ -39,14 +49,32 @@
     <div id="start-screen" class="modal modal--start">
         <h1 class="modal__title modal__title--lg">CAPYBARA SURVIVOR</h1>
         <p class="modal__subtitle">Survive waves of capybaras, build defenses, stay alive!</p>
+        <div id="start-skill-preview" style="display:none;margin-bottom:20px;background:rgba(0,0,0,0.4);border-radius:10px;padding:12px 24px;color:#f1c40f;font-size:15px;font-weight:700;text-align:center;"></div>
         <button id="start-button" class="btn">START GAME</button>
     </div>
-    
-    <div id="game-over-screen" class="modal modal--game-over">
-        <h1 class="modal__title modal__title--xl">GAME OVER</h1>
-        <p id="wave-stats" class="modal__stat"></p>
-        <p id="kill-stats" class="modal__stat modal__stat--secondary"></p>
-        <p class="modal__hint">Returning to menu in <span id="countdown">7</span> seconds...</p>
+
+    <!-- Game Over + Skill Tree Screen -->
+    <div id="game-over-screen" class="modal modal--game-over" style="overflow-y:auto;padding:30px 0;align-items:flex-start;justify-content:flex-start;">
+        <div style="width:100%;max-width:900px;margin:0 auto;padding:0 20px;">
+            <h1 class="modal__title modal__title--xl" style="text-align:center;margin-bottom:6px;">GAME OVER</h1>
+            <p id="wave-stats" class="modal__stat" style="text-align:center;"></p>
+            <p id="kill-stats" class="modal__stat modal__stat--secondary" style="text-align:center;"></p>
+            <!-- Skill point award banner -->
+            <div id="sp-award-banner" style="text-align:center;margin:10px 0 20px;padding:10px 20px;background:rgba(241,196,15,0.15);border:2px solid #f1c40f;border-radius:12px;">
+                <span style="color:#f1c40f;font-size:22px;font-weight:900;">⭐ <span id="sp-awarded">0</span> SKILL POINTS EARNED</span>
+                <span style="color:rgba(255,255,255,0.55);font-size:13px;display:block;margin-top:2px;">1 point per wave survived · bonus for boss waves</span>
+            </div>
+            <!-- Skill tree header -->
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+                <h3 style="color:#fff;font-size:20px;font-family:'Arial Black',sans-serif;margin:0;">🌳 SKILL TREE</h3>
+                <span style="color:#f1c40f;font-size:18px;font-weight:700;">⭐ <span id="sp-remaining">0</span> points remaining</span>
+            </div>
+            <div id="skill-tree-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px;"></div>
+            <div style="text-align:center;">
+                <p id="skill-save-note" style="color:rgba(255,255,255,0.4);font-size:13px;margin-bottom:14px;">Upgrades persist across all future runs</p>
+                <button id="play-again-btn" style="padding:16px 60px;font-size:26px;font-family:'Arial Black',sans-serif;background:#2196f3;border:none;border-radius:10px;cursor:pointer;color:#fff;box-shadow:0 6px 20px rgba(33,150,243,0.4);transition:transform 0.15s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">▶ PLAY AGAIN</button>
+            </div>
+        </div>
     </div>
 
     <!-- Upgrade Selection Screen -->
@@ -63,9 +91,283 @@
 
     <script>
         // =====================================================================
-        // UPGRADE SYSTEM
+        // COIN SYSTEM
         // =====================================================================
-        
+        let coins = 0;
+
+        function addCoins(amount) {
+            coins += amount;
+            document.getElementById('coin-display').innerText = `🪙 ${coins}`;
+            // Floating coin indicator
+            const el = document.createElement('div');
+            el.style.cssText = `position:absolute;bottom:260px;right:30px;color:#f1c40f;font-size:18px;font-weight:700;text-shadow:1px 1px 4px rgba(0,0,0,0.9);pointer-events:none;z-index:200;transition:opacity 0.5s,transform 0.5s;`;
+            el.innerText = `+${amount} 🪙`;
+            document.body.appendChild(el);
+            setTimeout(() => { el.style.opacity='0'; el.style.transform='translateY(-30px)'; setTimeout(()=>el.remove(),500); }, 600);
+        }
+
+        // =====================================================================
+        // POWER-UP DROP SYSTEM
+        // =====================================================================
+        const activePowerUp = { type: null, endTime: 0, timer: null };
+        const powerUpPickups = []; // 3D orbs in the world
+
+        const POWER_UP_TYPES = [
+            { id: 'speed',       label: '⚡ Speed Boost',    color: 0x00eeff, duration: 6000,  dropChance: 0.18 },
+            { id: 'damage',      label: '🔥 Damage Boost',   color: 0xff6600, duration: 8000,  dropChance: 0.15 },
+            { id: 'invincible',  label: '🛡️ Invincibility',  color: 0xffdd00, duration: 5000,  dropChance: 0.10 },
+            { id: 'ammo',        label: '🎯 Ammo Refill',    color: 0x44ff88, duration: 0,     dropChance: 0.20 },
+        ];
+
+        function tryDropPowerUp(position) {
+            const roll = Math.random();
+            let cumulative = 0;
+            let chosen = null;
+            for(const p of POWER_UP_TYPES) {
+                cumulative += p.dropChance + skillTree.powerDropBonus;
+                if(roll < cumulative) { chosen = p; break; }
+            }
+            if(!chosen) return; // ~37% chance nothing drops
+
+            const orb = new THREE.Mesh(
+                new THREE.SphereGeometry(0.35, 10, 10),
+                new THREE.MeshStandardMaterial({ color: chosen.color, emissive: chosen.color, emissiveIntensity: 0.6, roughness: 0.3 })
+            );
+            orb.position.copy(position);
+            orb.position.y = 0.6;
+            orb.userData.powerUpType = chosen;
+            orb.userData.spawnTime = Date.now();
+            scene.add(orb);
+            powerUpPickups.push(orb);
+        }
+
+        function applyPowerUp(type) {
+            // Clear existing
+            if(activePowerUp.timer) clearTimeout(activePowerUp.timer);
+            activePowerUp.type = type.id;
+            activePowerUp.endTime = Date.now() + type.duration;
+
+            const display = document.getElementById('powerup-display');
+            document.getElementById('powerup-name').innerText = type.label;
+            display.style.display = 'block';
+
+            playSound(700, 0.2, 'sine', 0.12);
+            setTimeout(() => playSound(900, 0.15, 'sine', 0.1), 100);
+
+            if(type.id === 'ammo') {
+                // Instant refill
+                currentAmmo = maxMagSize;
+                reserveAmmo = Math.min(reserveAmmo + 60, 300);
+                currentArrows = maxArrows;
+                currentSpears = maxSpears;
+                updateAmmoDisplay();
+                activePowerUp.type = null;
+                display.style.display = 'none';
+                return;
+            }
+
+            activePowerUp.timer = setTimeout(() => {
+                activePowerUp.type = null;
+                display.style.display = 'none';
+            }, type.duration);
+        }
+
+        function updatePowerUps() {
+            // Animate orbs and check pickup
+            for(let i = powerUpPickups.length - 1; i >= 0; i--) {
+                const orb = powerUpPickups[i];
+                orb.position.y = 0.6 + Math.sin((Date.now() - orb.userData.spawnTime) * 0.003) * 0.2;
+                orb.rotation.y += 0.04;
+                // Expire after 12 seconds
+                if(Date.now() - orb.userData.spawnTime > 12000) {
+                    scene.remove(orb); powerUpPickups.splice(i, 1); continue;
+                }
+                // Pickup range
+                if(player.position.distanceTo(orb.position) < 1.4) {
+                    applyPowerUp(orb.userData.powerUpType);
+                    scene.remove(orb); powerUpPickups.splice(i, 1);
+                }
+            }
+            // Update power-up timer bar
+            if(activePowerUp.type && activePowerUp.endTime > 0) {
+                const pType = POWER_UP_TYPES.find(p => p.id === activePowerUp.type);
+                if(pType && pType.duration > 0) {
+                    const remaining = Math.max(0, activePowerUp.endTime - Date.now());
+                    document.getElementById('powerup-bar').style.width = (remaining / pType.duration * 100) + '%';
+                }
+            }
+        }
+
+        function isPowerUpActive(id) { return activePowerUp.type === id; }
+
+        // =====================================================================
+        // PERSISTENT SKILL TREE (survives page reloads via localStorage)
+        // =====================================================================
+        const SKILL_NODES = [
+            { id: 'maxhp',     icon: '❤️',  name: 'Iron Constitution', desc: '+25 Max HP per rank',        color:'#e74c3c', maxRank: 8,  cost: 1,
+              apply(rank) { maxPlayerHealth = 100 + rank * 25; } },
+            { id: 'startammo', icon: '🔪',  name: 'Loaded Pockets',    desc: '+15 starting knives/rank',   color:'#c0c0c0', maxRank: 6,  cost: 1,
+              apply(rank) { /* applied at game start */ } },
+            { id: 'movespd',   icon: '👟',  name: 'Fleet Foot',        desc: '+8% move speed per rank',    color:'#3498db', maxRank: 5,  cost: 1,
+              apply(rank) { skillTree.moveSpeedBonus = rank * 0.08; } },
+            { id: 'reloadspd', icon: '🔄',  name: 'Quick Hands',       desc: '15% faster reload per rank', color:'#2ecc71', maxRank: 5,  cost: 1,
+              apply(rank) { skillTree.reloadSpeedBonus = rank * 0.15; } },
+            { id: 'dmgall',    icon: '⚔️',  name: 'Battle Hardened',   desc: '+4 all damage per rank',     color:'#e67e22', maxRank: 10, cost: 1,
+              apply(rank) { playerUpgrades.allDamageBonus = rank * 4; } },
+            { id: 'healregen', icon: '💊',  name: 'Bloodthirsty',      desc: '+3 HP on kill per rank',     color:'#ff6b9d', maxRank: 6,  cost: 1,
+              apply(rank) { skillTree.healPerKill = 5 + rank * 3; } },
+            { id: 'woodperk',  icon: '🪵',  name: 'Lumberjack',        desc: '+8 wood per kill per rank',  color:'#8b4513', maxRank: 5,  cost: 1,
+              apply(rank) { skillTree.woodPerKill = 20 + rank * 8; } },
+            { id: 'arrowcap',  icon: '🏹',  name: 'Fletching Master',  desc: '+8 max arrows per rank',     color:'#9b59b6', maxRank: 5,  cost: 1,
+              apply(rank) { /* applied at game start */ } },
+            { id: 'invdur',    icon: '🛡️',  name: 'Shielded Soul',     desc: '+1s invincibility per rank', color:'#f1c40f', maxRank: 5,  cost: 2,
+              apply(rank) { skillTree.invincibilityBonus = rank * 1000; } },
+            { id: 'powerdrop', icon: '🌟',  name: 'Lucky Drops',       desc: '+8% power-up drop chance/rank', color:'#00eeff', maxRank: 4, cost: 2,
+              apply(rank) { skillTree.powerDropBonus = rank * 0.08; } },
+            { id: 'coinbonus', icon: '🪙',  name: 'Treasure Hunter',   desc: '+2 coins per kill per rank', color:'#f1c40f', maxRank: 6,  cost: 1,
+              apply(rank) { skillTree.coinsPerKill = rank * 2; } },
+            { id: 'startwood', icon: '🌲',  name: 'Prepared',          desc: '+30 starting wood per rank', color:'#4caf50', maxRank: 5,  cost: 1,
+              apply(rank) { /* applied at game start */ } },
+        ];
+
+        // Load saved skill ranks from localStorage
+        function loadSkillRanks() {
+            try { return JSON.parse(localStorage.getItem('capybara_skills') || '{}'); } catch(e) { return {}; }
+        }
+        function saveSkillRanks(ranks) {
+            try { localStorage.setItem('capybara_skills', JSON.stringify(ranks)); } catch(e) {}
+        }
+        function loadSkillPoints() {
+            try { return parseInt(localStorage.getItem('capybara_sp') || '0'); } catch(e) { return 0; }
+        }
+        function saveSkillPoints(sp) {
+            try { localStorage.setItem('capybara_sp', String(sp)); } catch(e) {}
+        }
+
+        let savedRanks = loadSkillRanks();
+        let availableSkillPoints = loadSkillPoints();
+
+        // Apply all saved skill tree bonuses at startup
+        function applyAllSkillBonuses() {
+            SKILL_NODES.forEach(node => {
+                const rank = savedRanks[node.id] || 0;
+                if(rank > 0) node.apply(rank);
+            });
+            // Start-of-game stat overrides from skill tree
+            const ammoRank = savedRanks['startammo'] || 0;
+            currentAmmo = Math.min(maxMagSize + ammoRank * 15, maxMagSize);
+            reserveAmmo = 90 + ammoRank * 15;
+            const arrowRank = savedRanks['arrowcap'] || 0;
+            maxArrows = 50 + arrowRank * 8;
+            currentArrows = maxArrows;
+            const woodRank = savedRanks['startwood'] || 0;
+            wood = 30 + woodRank * 30;
+            document.getElementById('mats').innerText = `WOOD: ${wood}`;
+            document.getElementById('health-bar').style.width = '100%';
+        }
+
+        // Render the skill tree grid in the game over screen
+        function renderSkillTree() {
+            document.getElementById('sp-remaining').innerText = availableSkillPoints;
+            const grid = document.getElementById('skill-tree-grid');
+            grid.innerHTML = '';
+            SKILL_NODES.forEach(node => {
+                const rank = savedRanks[node.id] || 0;
+                const maxed = rank >= node.maxRank;
+                const canAfford = availableSkillPoints >= node.cost;
+                const card = document.createElement('div');
+                card.style.cssText = `
+                    background:rgba(255,255,255,0.06);border-radius:10px;padding:14px 12px 12px;
+                    border:2px solid ${maxed ? 'rgba(255,255,255,0.15)' : canAfford ? node.color+'99' : 'rgba(255,255,255,0.1)'};
+                    opacity:${maxed ? 0.5 : 1};cursor:${!maxed && canAfford ? 'pointer' : 'default'};
+                    transition:transform 0.12s,box-shadow 0.12s;position:relative;
+                `;
+                // Rank pips
+                let pips = '';
+                for(let i = 0; i < node.maxRank; i++) {
+                    pips += `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:3px;background:${i < rank ? node.color : 'rgba(255,255,255,0.15)'};"></span>`;
+                }
+                card.innerHTML = `
+                    <div style="font-size:26px;margin-bottom:6px;">${node.icon}</div>
+                    <div style="color:#fff;font-size:13px;font-weight:800;margin-bottom:4px;">${node.name}</div>
+                    <div style="color:rgba(255,255,255,0.5);font-size:11px;line-height:1.4;margin-bottom:8px;">${node.desc}</div>
+                    <div style="margin-bottom:8px;">${pips}</div>
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <span style="color:${node.color};font-size:12px;font-weight:700;">${maxed ? 'MAX' : `Rank ${rank}/${node.maxRank}`}</span>
+                        <span style="color:#f1c40f;font-size:12px;font-weight:700;">${maxed ? '' : `⭐ ${node.cost}`}</span>
+                    </div>
+                `;
+                if(!maxed && canAfford) {
+                    card.addEventListener('mouseenter', () => { card.style.transform='translateY(-3px)'; card.style.boxShadow=`0 6px 20px ${node.color}44`; });
+                    card.addEventListener('mouseleave', () => { card.style.transform=''; card.style.boxShadow=''; });
+                    card.addEventListener('click', () => {
+                        availableSkillPoints -= node.cost;
+                        savedRanks[node.id] = (savedRanks[node.id] || 0) + 1;
+                        saveSkillRanks(savedRanks);
+                        saveSkillPoints(availableSkillPoints);
+                        playSound(600, 0.15, 'sine', 0.12);
+                        setTimeout(() => playSound(900, 0.12, 'sine', 0.08), 100);
+                        renderSkillTree();
+                    });
+                }
+                grid.appendChild(card);
+            });
+        }
+
+        // Show the game over + skill tree screen
+        function showGameOver(wavesCompleted, totalKills) {
+            gameStarted = false;
+            document.exitPointerLock();
+            // Award skill points: 1 per wave, +1 bonus per boss wave survived
+            const bossWaveBonus = Math.floor(wavesCompleted / 5);
+            const earned = wavesCompleted + bossWaveBonus;
+            availableSkillPoints += earned;
+            saveSkillPoints(availableSkillPoints);
+
+            document.getElementById('wave-stats').innerText = `Waves Completed: ${wavesCompleted}`;
+            document.getElementById('kill-stats').innerText = `Total Eliminations: ${totalKills}`;
+            document.getElementById('sp-awarded').innerText = earned;
+            renderSkillTree();
+            document.getElementById('game-over-screen').classList.add('is-visible');
+        }
+
+        document.getElementById('play-again-btn').addEventListener('click', () => {
+            location.reload();
+        });
+
+        // Show skill preview on start screen if player has existing skills
+        function updateStartScreenPreview() {
+            const totalRanks = Object.values(savedRanks).reduce((s, v) => s + v, 0);
+            const preview = document.getElementById('start-skill-preview');
+            if(totalRanks > 0) {
+                preview.style.display = 'block';
+                preview.innerText = `⭐ ${availableSkillPoints} skill points available · ${totalRanks} skill ranks active`;
+            }
+        }
+        updateStartScreenPreview();
+
+        // =====================================================================
+        // SHOP SYSTEM (removed - replaced by post-death skill tree)
+        // =====================================================================
+        let shopScreenOpen = false; // kept for mousedown guard compatibility
+
+        function getEffectiveReloadTime() { return 2000 * (1 - skillTree.reloadSpeedBonus); }
+        function getEffectiveMoveSpeed() { return 0.15 * (1 + skillTree.moveSpeedBonus); }
+
+        // =====================================================================
+        // RUNTIME STATE (overridden by skill tree on start)
+        // =====================================================================
+        let maxPlayerHealth = 100;
+        const skillTree = {
+            reloadSpeedBonus: 0,
+            moveSpeedBonus: 0,
+            woodPerKill: 20,
+            healPerKill: 5,
+            coinsPerKill: 0,
+            invincibilityBonus: 0,
+            powerDropBonus: 0,
+        };
+
         // Current player upgrade stats (multipliers/bonuses on top of base values)
         const playerUpgrades = {
             knifeDamageBonus: 0,
@@ -73,9 +375,9 @@
             spearDamageBonus: 0,
             axeDamageBonus: 0,
             allDamageBonus: 0,
-            fireRateBonus: 0,       // percentage reduction in fire rate cooldown (0-0.9)
-            bowChargeSpeedBonus: 0, // percentage reduction in bow charge time
-            rangeBonus: 0,          // extra units added to bullet life
+            fireRateBonus: 0,
+            bowChargeSpeedBonus: 0,
+            rangeBonus: 0,
         };
 
         // Track upgrade history for the tracker HUD
@@ -232,6 +534,22 @@
                 },
                 apply(variant) { playerUpgrades.rangeBonus += variant.bonus; }
             },
+            {
+                type: 'capacity',
+                icon: '🔪',
+                name: 'Knife Pouch',
+                applies: 'Knife',
+                getVariant() {
+                    const r = rollRarity();
+                    const bonus = { common: 3, uncommon: 6, rare: 10, epic: 16, legendary: 25 }[r];
+                    return { rarity: r, bonus, desc: `A larger pouch lets you carry more throwing knives before reloading.`, bonusText: `+${bonus} Knife Capacity` };
+                },
+                apply(variant) {
+                    maxMagSize += variant.bonus;
+                    currentAmmo = Math.min(currentAmmo + variant.bonus, maxMagSize);
+                    updateAmmoDisplay();
+                }
+            },
         ];
 
         function rollRarity() {
@@ -364,7 +682,8 @@
             if (type === 'bow')    bonus += playerUpgrades.bowDamageBonus;
             if (type === 'spear')  bonus += playerUpgrades.spearDamageBonus;
             if (type === 'axe')    bonus += playerUpgrades.axeDamageBonus;
-            return base + bonus;
+            const powerMult = isPowerUpActive('damage') ? 2.0 : 1.0;
+            return (base + bonus) * powerMult;
         }
 
         // Helper: range bonus in bullet life frames
@@ -659,47 +978,232 @@
             return { container, fill };
         }
 
+        // Enemy projectiles (spit blobs from spitters)
+        const enemyProjectiles = [];
+
+        // Build a capybara mesh with given body/head colors and scale
+        function buildCapybaraMesh(bodyColor, snoutColor, scale) {
+            const character = new THREE.Group();
+            const bodyMat = new THREE.MeshStandardMaterial({ color: bodyColor, roughness: 0.8, metalness: 0.1 });
+            const snoutMat = new THREE.MeshStandardMaterial({ color: snoutColor, roughness: 0.9, metalness: 0.1 });
+            const body = new THREE.Mesh(new THREE.BoxGeometry(1.2,0.7,1.8), bodyMat);
+            body.position.y = 0.5; body.castShadow = true; character.add(body);
+            const head = new THREE.Mesh(new THREE.BoxGeometry(0.8,0.6,0.7), bodyMat);
+            head.position.set(0,0.65,1.0); head.castShadow = true; character.add(head);
+            const snout = new THREE.Mesh(new THREE.BoxGeometry(0.5,0.3,0.3), snoutMat);
+            snout.position.set(0,0.6,1.35); character.add(snout);
+            const eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.08,8,8), new THREE.MeshBasicMaterial({color:0x000000}));
+            eyeL.position.set(-0.2,0.75,1.15); character.add(eyeL);
+            const eyeR = new THREE.Mesh(new THREE.SphereGeometry(0.08,8,8), new THREE.MeshBasicMaterial({color:0x000000}));
+            eyeR.position.set(0.2,0.75,1.15); character.add(eyeR);
+            const earMat = new THREE.MeshStandardMaterial({ color: bodyColor, roughness: 0.8 });
+            const earL = new THREE.Mesh(new THREE.SphereGeometry(0.15,8,8), earMat);
+            earL.position.set(-0.3,0.95,0.9); character.add(earL);
+            const earR = new THREE.Mesh(new THREE.SphereGeometry(0.15,8,8), earMat);
+            earR.position.set(0.3,0.95,0.9); character.add(earR);
+            const legMat = new THREE.MeshStandardMaterial({ color: bodyColor, roughness: 0.8 });
+            const fll = new THREE.Mesh(new THREE.BoxGeometry(0.25,0.5,0.25), legMat);
+            fll.position.set(-0.4,0.25,0.6); fll.castShadow=true; character.add(fll); character.userData.frontLegLeft=fll;
+            const flr = new THREE.Mesh(new THREE.BoxGeometry(0.25,0.5,0.25), legMat);
+            flr.position.set(0.4,0.25,0.6); flr.castShadow=true; character.add(flr); character.userData.frontLegRight=flr;
+            const bll = new THREE.Mesh(new THREE.BoxGeometry(0.25,0.5,0.25), legMat);
+            bll.position.set(-0.4,0.25,-0.5); bll.castShadow=true; character.add(bll); character.userData.backLegLeft=bll;
+            const blr = new THREE.Mesh(new THREE.BoxGeometry(0.25,0.5,0.25), legMat);
+            blr.position.set(0.4,0.25,-0.5); blr.castShadow=true; character.add(blr); character.userData.backLegRight=blr;
+            character.scale.setScalar(scale);
+            character.castShadow = true; character.receiveShadow = true;
+            character.userData.animTime = 0; character.userData.vY = 0;
+            character.userData.lastAttack = 0;
+            return character;
+        }
+
+        // ENEMY TYPE DEFINITIONS
+        // Each returns a fully configured Three.Group with userData stats
+        function createScout() {
+            const e = buildCapybaraMesh(0xa0522d, 0x7a3b10, 0.65); // small, tan
+            e.userData.enemyType = 'scout';
+            e.userData.health = 35; e.userData.maxHealth = 35;
+            e.userData.speed = 0.10;
+            e.userData.attackRange = 1.0; e.userData.attackCooldown = 800;
+            e.userData.attackDamage = 8;
+            e.userData.jumpCooldown = 4000; e.userData.lastJump = 0;
+            return e;
+        }
+
+        function createNormal() {
+            const e = buildCapybaraMesh(0x8b6f47, 0x654321, 1.0); // standard
+            e.userData.enemyType = 'normal';
+            e.userData.health = 100; e.userData.maxHealth = 100;
+            e.userData.speed = 0.04;
+            e.userData.attackRange = 1.2; e.userData.attackCooldown = 1000;
+            e.userData.attackDamage = 20;
+            return e;
+        }
+
+        function createTank() {
+            const e = buildCapybaraMesh(0x4a3728, 0x2e1f0f, 1.75); // huge, dark brown
+            // Crown/mark to distinguish
+            const crownMat = new THREE.MeshStandardMaterial({ color: 0xcc3300, roughness: 0.5 });
+            const stripe = new THREE.Mesh(new THREE.BoxGeometry(1.25,0.12,0.12), crownMat);
+            stripe.position.set(0,0.82,0); e.add(stripe);
+            e.userData.enemyType = 'tank';
+            e.userData.health = 335; e.userData.maxHealth = 335;
+            e.userData.speed = 0.022;
+            e.userData.attackRange = 2.0; e.userData.attackCooldown = 1400;
+            e.userData.attackDamage = 35;
+            return e;
+        }
+
+        function createExploder() {
+            const e = buildCapybaraMesh(0xcc6600, 0xff4400, 0.9); // orange tint
+            // Glowing belly indicator
+            const belly = new THREE.Mesh(
+                new THREE.SphereGeometry(0.35,8,8),
+                new THREE.MeshStandardMaterial({ color: 0xff6600, emissive: 0xff3300, emissiveIntensity: 0.8, roughness: 0.4 })
+            );
+            belly.position.set(0, 0.45, 0.2); e.add(belly);
+            e.userData.enemyType = 'exploder';
+            e.userData.health = 60; e.userData.maxHealth = 60;
+            e.userData.speed = 0.07;
+            e.userData.attackRange = 1.8; e.userData.attackCooldown = 99999; // explodes once
+            e.userData.attackDamage = 0; // handled by explosion
+            e.userData.exploded = false;
+            e.userData.belly = belly;
+            return e;
+        }
+
+        function createSpitter() {
+            const e = buildCapybaraMesh(0x557744, 0x334422, 1.0); // green-tinged
+            // Green cheek puffs
+            const puffMat = new THREE.MeshStandardMaterial({ color: 0x44bb44, emissive: 0x227722, emissiveIntensity: 0.4 });
+            const pL = new THREE.Mesh(new THREE.SphereGeometry(0.18,8,8), puffMat);
+            pL.position.set(-0.45,0.68,1.0); e.add(pL);
+            const pR = new THREE.Mesh(new THREE.SphereGeometry(0.18,8,8), puffMat);
+            pR.position.set(0.45,0.68,1.0); e.add(pR);
+            e.userData.enemyType = 'spitter';
+            e.userData.health = 80; e.userData.maxHealth = 80;
+            e.userData.speed = 0.03;
+            e.userData.attackRange = 1.2; e.userData.attackCooldown = 1200;
+            e.userData.attackDamage = 10;
+            e.userData.spitRange = 18;     // max spit distance
+            e.userData.spitCooldown = 2800;
+            e.userData.lastSpit = 0;
+            e.userData.preferredDistance = 12; // tries to stay away
+            return e;
+        }
+
+        function createAlphaBoss() {
+            const e = buildCapybaraMesh(0x1a0a00, 0x3d0000, 2.2); // huge, near-black
+            // Red crown spikes
+            const spikeMat = new THREE.MeshStandardMaterial({ color: 0xff2200, emissive: 0xaa0000, emissiveIntensity: 0.6 });
+            for(let i = -1; i <= 1; i++) {
+                const spike = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.4, 6), spikeMat);
+                spike.position.set(i * 0.28, 1.05, 0); e.add(spike);
+            }
+            // Glowing red eyes
+            const redEyeMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+            e.children.forEach(c => {
+                if(c.geometry && c.geometry.type === 'SphereGeometry' && Math.abs(c.position.y - 0.75) < 0.1) {
+                    c.material = redEyeMat;
+                }
+            });
+            e.userData.enemyType = 'boss';
+            e.userData.health = 1500; e.userData.maxHealth = 1500;
+            e.userData.speed = 0.035;
+            e.userData.attackRange = 2.5; e.userData.attackCooldown = 900;
+            e.userData.attackDamage = 40;
+            e.userData.spitRange = 25;
+            e.userData.spitCooldown = 1800;
+            e.userData.lastSpit = 0;
+            e.userData.jumpCooldown = 5000; e.userData.lastJump = 0;
+            e.userData.isBoss = true;
+            return e;
+        }
+
+        // Pick enemy type based on current wave, returns a configured group
+        function createEnemyForWave() {
+            // Boss spawns on waves 5, 10, 15...
+            if(currentWave % 5 === 0 && currentWave > 0) {
+                // Only one boss per wave — tracked via flag
+                if(!window._bossSpawnedThisWave) {
+                    window._bossSpawnedThisWave = true;
+                    return createAlphaBoss();
+                }
+            }
+            const roll = Math.random();
+            const w = currentWave;
+            if(w >= 10 && roll < 0.12) return createSpitter();
+            if(w >= 8  && roll < 0.22) return createExploder();
+            if(w >= 4  && roll < 0.30) return createTank();
+            if(w >= 2  && roll < 0.45) return createScout();
+            return createNormal();
+        }
+
+        function fireEnemySpit(en) {
+            const spitGroup = new THREE.Group();
+            const blob = new THREE.Mesh(
+                new THREE.SphereGeometry(0.18, 7, 7),
+                new THREE.MeshStandardMaterial({ color: 0x44dd44, emissive: 0x22aa22, emissiveIntensity: 0.7, roughness: 0.6 })
+            );
+            spitGroup.add(blob);
+            const worldPos = new THREE.Vector3();
+            en.getWorldPosition(worldPos);
+            worldPos.y += 0.7 * en.scale.y;
+            spitGroup.position.copy(worldPos);
+            const dir = new THREE.Vector3().subVectors(player.position, worldPos);
+            dir.y += 0.15; // slight arc
+            dir.normalize();
+            spitGroup.userData.velocity = dir.multiplyScalar(0.9);
+            spitGroup.userData.gravity = -0.003;
+            spitGroup.userData.life = 180;
+            spitGroup.userData.damage = en.userData.isBoss ? 18 : 10;
+            scene.add(spitGroup);
+            enemyProjectiles.push(spitGroup);
+            playSound(220, 0.12, 'sine', 0.07);
+        }
+
+        function triggerExplosion(en) {
+            if(en.userData.exploded) return;
+            en.userData.exploded = true;
+            // Visual flash
+            en.children.forEach(c => {
+                if(c.material) c.material = new THREE.MeshBasicMaterial({ color: 0xff6600 });
+            });
+            playSound(80, 0.4, 'sawtooth', 0.18);
+            setTimeout(() => playSound(120, 0.3, 'square', 0.12), 80);
+            // Area damage to player
+            const dist = player.position.distanceTo(en.position);
+            const blastRadius = 4.5;
+            if(dist < blastRadius && !isPowerUpActive('invincible')) {
+                const dmg = Math.round(60 * (1 - dist / blastRadius));
+                health = Math.max(0, health - dmg);
+                document.getElementById('health-bar').style.width = (health/maxPlayerHealth*100) + '%';
+                document.getElementById('health-bar').style.width = health + '%';
+                damageSound();
+                if(health <= 0) {
+                    showGameOver(currentWave - 1, killCount);
+                }
+            }
+            // Show explosion ring indicator
+            const expEl = document.createElement('div');
+            expEl.style.cssText = `position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#ff6600;font-size:38px;font-weight:900;text-shadow:2px 2px 8px #000;pointer-events:none;z-index:200;`;
+            expEl.innerText = '💥 BOOM!';
+            document.body.appendChild(expEl);
+            setTimeout(() => expEl.remove(), 700);
+            // Remove enemy
+            setTimeout(() => {
+                scene.remove(en);
+                if(en.userData.healthBarElement) en.userData.healthBarElement.remove();
+                const idx = enemies.indexOf(en);
+                if(idx > -1) enemies.splice(idx, 1);
+            }, 120);
+        }
+
         function createHumanoid(color) {
             const character = new THREE.Group();
             if(color === 0xff4444) {
-                // CAPYBARA
-                const body = new THREE.Mesh(
-                    new THREE.BoxGeometry(1.2, 0.7, 1.8),
-                    new THREE.MeshStandardMaterial({ color: 0x8b6f47, roughness: 0.8, metalness: 0.1 })
-                );
-                body.position.y = 0.5; body.castShadow = true; character.add(body);
-                const head = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.8, 0.6, 0.7),
-                    new THREE.MeshStandardMaterial({ color: 0x8b6f47, roughness: 0.8, metalness: 0.1 })
-                );
-                head.position.set(0, 0.65, 1.0); head.castShadow = true; character.add(head);
-                const snout = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.5, 0.3, 0.3),
-                    new THREE.MeshStandardMaterial({ color: 0x654321, roughness: 0.9, metalness: 0.1 })
-                );
-                snout.position.set(0, 0.6, 1.35); character.add(snout);
-                const eyeLeft = new THREE.Mesh(new THREE.SphereGeometry(0.08,8,8), new THREE.MeshBasicMaterial({color:0}));
-                eyeLeft.position.set(-0.2, 0.75, 1.15); character.add(eyeLeft);
-                const eyeRight = new THREE.Mesh(new THREE.SphereGeometry(0.08,8,8), new THREE.MeshBasicMaterial({color:0}));
-                eyeRight.position.set(0.2, 0.75, 1.15); character.add(eyeRight);
-                const earMat = new THREE.MeshStandardMaterial({ color: 0x8b6f47, roughness: 0.8 });
-                const earL = new THREE.Mesh(new THREE.SphereGeometry(0.15,8,8), earMat);
-                earL.position.set(-0.3, 0.95, 0.9); character.add(earL);
-                const earR = new THREE.Mesh(new THREE.SphereGeometry(0.15,8,8), earMat);
-                earR.position.set(0.3, 0.95, 0.9); character.add(earR);
-                const legMat = new THREE.MeshStandardMaterial({ color: 0x8b6f47, roughness: 0.8 });
-                const fll = new THREE.Mesh(new THREE.BoxGeometry(0.25,0.5,0.25), legMat);
-                fll.position.set(-0.4,0.25,0.6); fll.castShadow=true; character.add(fll); character.userData.frontLegLeft=fll;
-                const flr = new THREE.Mesh(new THREE.BoxGeometry(0.25,0.5,0.25), legMat);
-                flr.position.set(0.4,0.25,0.6); flr.castShadow=true; character.add(flr); character.userData.frontLegRight=flr;
-                const bll = new THREE.Mesh(new THREE.BoxGeometry(0.25,0.5,0.25), legMat);
-                bll.position.set(-0.4,0.25,-0.5); bll.castShadow=true; character.add(bll); character.userData.backLegLeft=bll;
-                const blr = new THREE.Mesh(new THREE.BoxGeometry(0.25,0.5,0.25), legMat);
-                blr.position.set(0.4,0.25,-0.5); blr.castShadow=true; character.add(blr); character.userData.backLegRight=blr;
-                character.userData.animTime = 0; character.userData.vY = 0;
-                character.userData.health = 100; character.userData.maxHealth = 100;
-                character.userData.lastAttack = 0; character.userData.attackCooldown = 1000;
-                character.userData.attackRange = 1.2; character.userData.speed = 0.04;
+                // Legacy call — return a normal capybara
+                return createNormal();
             } else {
                 // PLAYER
                 const head = new THREE.Mesh(new THREE.BoxGeometry(0.4,0.4,0.4), new THREE.MeshStandardMaterial({color:0xffdbac,roughness:0.7,metalness:0.1}));
@@ -799,24 +1303,27 @@
         const BOW_RAPID_DAMAGE = 22;
         const BOW_MAX_DAMAGE = 85;
         
+        // Apply persistent skill tree bonuses from previous runs
+        applyAllSkillBonuses();
         updateTerrain();
 
         function spawnEnemy() {
-            const e = createHumanoid(0xff4444);
+            const e = createEnemyForWave();
             e.position.set(Math.random()*60-30, 0, Math.random()*60-30);
             scene.add(e);
             const hBar = createHealthBar(false);
             e.userData.healthBarElement = hBar.container;
             e.userData.healthBarFill = hBar.fill;
+            // Scale health/speed with wave (bosses get extra scaling)
             const wm = 1 + (currentWave - 1) * 0.15;
-            e.userData.health = Math.floor(100 * wm);
-            e.userData.maxHealth = Math.floor(100 * wm);
-            e.userData.speed = 0.04 + (currentWave - 1) * 0.003;
+            e.userData.health = Math.floor(e.userData.health * wm);
+            e.userData.maxHealth = Math.floor(e.userData.maxHealth * wm);
+            e.userData.speed = e.userData.speed + (currentWave - 1) * 0.002;
             enemies.push(e);
         }
         
         function spawnEnemyNearPlayer() {
-            const e = createHumanoid(0xff4444);
+            const e = createEnemyForWave();
             const angle = Math.random() * Math.PI * 2;
             const dist = 50 + Math.random() * 70;
             e.position.set(player.position.x + Math.cos(angle)*dist, 0, player.position.z + Math.sin(angle)*dist);
@@ -825,9 +1332,9 @@
             e.userData.healthBarElement = hBar.container;
             e.userData.healthBarFill = hBar.fill;
             const wm = 1 + (currentWave - 1) * 0.15;
-            e.userData.health = Math.floor(100 * wm);
-            e.userData.maxHealth = Math.floor(100 * wm);
-            e.userData.speed = 0.04 + (currentWave - 1) * 0.003;
+            e.userData.health = Math.floor(e.userData.health * wm);
+            e.userData.maxHealth = Math.floor(e.userData.maxHealth * wm);
+            e.userData.speed = e.userData.speed + (currentWave - 1) * 0.002;
             enemies.push(e);
         }
         
@@ -1036,6 +1543,7 @@
         }
 
         function killEnemy(en) {
+            const enPos = en.position.clone();
             scene.remove(en);
             en.userData.healthBarElement.remove();
             const eIdx = enemies.indexOf(en);
@@ -1047,20 +1555,33 @@
             reserveAmmo = Math.min(reserveAmmo + 15, 300);
             currentArrows = Math.min(currentArrows + 5, maxArrows);
             currentSpears = Math.min(currentSpears + 2, maxSpears);
-            wood += 20;
-            health = Math.min(health + 5, 100);
+
+            // Skill-tree-scaled rewards
+            wood += skillTree.woodPerKill;
+            const healAmt = skillTree.healPerKill;
+            health = Math.min(health + healAmt, maxPlayerHealth);
             updateAmmoDisplay();
             document.getElementById('mats').innerText = `WOOD: ${wood}`;
-            document.getElementById('health-bar').style.width = health + '%';
+            document.getElementById('health-bar').style.width = (health / maxPlayerHealth * 100) + '%';
+
+            // Coin reward — boss worth more
+            const coinReward = (en.userData.isBoss ? 25 : en.userData.enemyType === 'tank' ? 8 : 3) + skillTree.coinsPerKill;
+            addCoins(coinReward);
+
+            // Heal indicator
             const healEl = document.createElement('div');
             healEl.className = 'indicator indicator--heal';
-            healEl.innerText = '+5 HP';
+            healEl.innerText = `+${healAmt} HP`;
             document.body.appendChild(healEl);
             setTimeout(() => {
                 healEl.classList.add('indicator--fade-out','is-exiting');
                 healEl.style.transform = 'translateY(-30px)';
                 setTimeout(() => healEl.remove(), 500);
             }, 100);
+
+            // Random power-up drop
+            tryDropPowerUp(enPos);
+
             if (enemiesKilledThisWave >= enemiesInWave) waveComplete();
         }
 
@@ -1072,15 +1593,16 @@
             document.getElementById('wave-counter').innerText = `WAVE: ${currentWave}`;
             document.getElementById('enemies-remaining').innerText = `ENEMIES: ${enemiesInWave}`;
             
-            // Show wave complete banner briefly then open upgrade screen
             const waveMsg = document.createElement('div');
             waveMsg.className = 'indicator indicator--center indicator--wave-complete';
-            waveMsg.innerText = `WAVE ${completedWave} COMPLETE!`;
+            const isBossWave = (currentWave % 5 === 0);
+            waveMsg.innerText = isBossWave ? `⚠️ WAVE ${completedWave} COMPLETE! BOSS INCOMING!` : `WAVE ${completedWave} COMPLETE!`;
+            waveMsg.style.color = isBossWave ? '#ff4400' : '';
             document.body.appendChild(waveMsg);
             
-            // Store pending wave data and show upgrade screen after brief delay
             pendingWaveSpawn = true;
             pendingWaveSize = enemiesInWave;
+            window._bossSpawnedThisWave = false;
             setTimeout(() => {
                 waveMsg.remove();
                 showUpgradeScreen(completedWave);
@@ -1139,7 +1661,7 @@
                 currentAmmo += toReload; reserveAmmo -= toReload;
                 isReloading = false;
                 updateAmmoDisplay();
-            }, 2000);
+            }, getEffectiveReloadTime());
         }
 
         function animateCharacter(character, isMoving, isAttacking = false) {
@@ -1239,7 +1761,7 @@
 
         document.addEventListener('mousedown', (e) => {
             if(!gameStarted) return;
-            if(upgradeScreenOpen) return;
+            if(upgradeScreenOpen || shopScreenOpen) return;
             if(document.pointerLockElement !== document.body) {
                 document.body.requestPointerLock();
             } else {
@@ -1287,6 +1809,7 @@
             
             updateDayNightCycle();
             animateClouds();
+            updatePowerUps();
             tryAutoFire();
             
             // Bow charge bar
@@ -1298,7 +1821,7 @@
                 chargeFill.style.width = pct + '%';
             }
             
-            const baseSpeed = 0.15;
+            const baseSpeed = getEffectiveMoveSpeed() * (isPowerUpActive('speed') ? 1.6 : 1.0);
             const sprintMult = 1.6;
             let moveDir = new THREE.Vector3();
             let isMoving = false;
@@ -1350,18 +1873,58 @@
                     spawnEnemyNearPlayer();
                     return;
                 }
+
+                const type = en.userData.enemyType || 'normal';
                 const dirToPlayer = new THREE.Vector3().subVectors(player.position, en.position).normalize();
+                const now = Date.now();
+
+                // --- EXPLODER: pulse belly glow and explode on contact ---
+                if(type === 'exploder') {
+                    if(en.userData.belly) {
+                        en.userData.belly.material.emissiveIntensity = 0.5 + Math.sin(now * 0.008) * 0.45;
+                    }
+                    if(dist < en.userData.attackRange * en.scale.x && !en.userData.exploded) {
+                        triggerExplosion(en);
+                        killEnemy(en);
+                        return;
+                    }
+                }
+
+                // --- SPITTER / BOSS: ranged spit attack ---
+                if(type === 'spitter' || type === 'boss') {
+                    if(dist < en.userData.spitRange && now - en.userData.lastSpit > en.userData.spitCooldown) {
+                        en.userData.lastSpit = now;
+                        fireEnemySpit(en);
+                    }
+                }
+
+                // --- SCOUT / BOSS: jump over walls ---
+                if(type === 'scout' || type === 'boss') {
+                    const wallRay = new THREE.Raycaster(new THREE.Vector3(en.position.x,0.5,en.position.z), dirToPlayer);
+                    const wallHits = wallRay.intersectObjects(collidables.filter(c => c.userData.type === 'wall'));
+                    if(wallHits.length > 0 && wallHits[0].distance < 2.5 && now - en.userData.lastJump > en.userData.jumpCooldown) {
+                        en.userData.vY = 0.28;
+                        en.userData.lastJump = now;
+                    }
+                }
+
                 const eRay = new THREE.Raycaster(new THREE.Vector3(en.position.x,0.5,en.position.z), dirToPlayer);
                 const eHits = eRay.intersectObjects([...collidables, ...rampColliders]);
                 let isBlocked = (eHits.length > 0 && eHits[0].distance < 0.8);
                 let isAttackingWall = false;
-                if(!isBlocked && dist > en.userData.attackRange) {
+
+                // Spitters try to maintain preferred distance
+                if(type === 'spitter' && dist < (en.userData.preferredDistance * 0.7)) {
+                    const backDir = dirToPlayer.clone().negate();
+                    en.position.add(new THREE.Vector3(backDir.x,0,backDir.z).multiplyScalar(en.userData.speed));
+                } else if(!isBlocked && dist > en.userData.attackRange) {
                     en.position.add(new THREE.Vector3(dirToPlayer.x,0,dirToPlayer.z).multiplyScalar(en.userData.speed));
                 } else if(isBlocked && eHits[0].object.userData.type==='wall') {
                     isAttackingWall = true;
-                    if(Date.now() - en.userData.lastAttack > en.userData.attackCooldown) {
-                        damageWall(eHits[0].object, 15);
-                        en.userData.lastAttack = Date.now();
+                    if(now - en.userData.lastAttack > en.userData.attackCooldown) {
+                        const wallDmg = type==='tank' ? 30 : type==='boss' ? 50 : 15;
+                        damageWall(eHits[0].object, wallDmg);
+                        en.userData.lastAttack = now;
                     }
                 } else if(isBlocked) {
                     const rDir = new THREE.Vector3(-dirToPlayer.z,0,dirToPlayer.x).normalize();
@@ -1373,31 +1936,42 @@
                     if(!(rH.length > 0 && rH[0].distance < 0.8)) en.position.add(rDir.multiplyScalar(en.userData.speed * 0.7));
                     else if(!(lH.length > 0 && lH[0].distance < 0.8)) en.position.add(lDir.multiplyScalar(en.userData.speed * 0.7));
                 }
+
                 animateCharacter(en, !isBlocked && dist > en.userData.attackRange, isAttackingWall);
                 en.rotation.y = Math.atan2(dirToPlayer.x, dirToPlayer.z);
                 en.position.y += en.userData.vY; en.userData.vY -= 0.01;
                 const eDown = new THREE.Raycaster(new THREE.Vector3(en.position.x,en.position.y+1.2,en.position.z), new THREE.Vector3(0,-1,0));
                 const eHit2 = eDown.intersectObjects([...collidables,...rampColliders,...activeFloors]);
                 if(eHit2.length > 0 && eHit2[0].distance <= 1.25) { en.position.y=(en.position.y+1.2)-eHit2[0].distance; en.userData.vY=0; }
-                updateUIHealthBar(en, 2.2);
-                if(dist < en.userData.attackRange && Date.now() - lastDamageTime > 1000) {
-                    health -= 20; lastDamageTime = Date.now(); damageSound();
-                    document.getElementById('health-bar').style.width = health + '%';
-                    if(health <= 0) {
-                        gameStarted = false;
-                        document.exitPointerLock();
-                        document.getElementById('game-over-screen').classList.add('is-visible');
-                        document.getElementById('wave-stats').innerText = `Waves Completed: ${currentWave - 1}`;
-                        document.getElementById('kill-stats').innerText = `Total Eliminations: ${killCount}`;
-                        let countdown = 7;
-                        const ci = setInterval(() => {
-                            countdown--;
-                            document.getElementById('countdown').innerText = countdown;
-                            if(countdown <= 0) { clearInterval(ci); location.reload(); }
-                        }, 1000);
-                    }
+
+                updateUIHealthBar(en, 2.2 * en.scale.y);
+
+                // Melee damage to player
+                const meleeDist = en.userData.attackRange * en.scale.x;
+                if(dist < meleeDist && now - lastDamageTime > 1000 && type !== 'exploder' && !isPowerUpActive('invincible')) {
+                    const dmg = en.userData.attackDamage || 20;
+                    health -= dmg; lastDamageTime = now; damageSound();
+                    document.getElementById('health-bar').style.width = (health/maxPlayerHealth*100) + '%';
+                    if(health <= 0) { showGameOver(currentWave - 1, killCount); }
                 }
             });
+
+            // Enemy projectile (spit) physics
+            for(let i = enemyProjectiles.length-1; i >= 0; i--) {
+                const proj = enemyProjectiles[i];
+                proj.position.add(proj.userData.velocity);
+                proj.userData.velocity.y += proj.userData.gravity;
+                proj.userData.life--;
+                if(proj.position.y < 0.2 || proj.userData.life <= 0) { scene.remove(proj); enemyProjectiles.splice(i,1); continue; }
+                if(proj.position.distanceTo(player.position) < 1.0) {
+                    if(!isPowerUpActive('invincible')) {
+                        health -= proj.userData.damage; lastDamageTime = Date.now(); damageSound();
+                        document.getElementById('health-bar').style.width = Math.max(0, health/maxPlayerHealth*100) + '%';
+                    }
+                    scene.remove(proj); enemyProjectiles.splice(i,1);
+                    if(health <= 0) { showGameOver(currentWave - 1, killCount); }
+                }
+            }
 
             collidables.forEach(c => { if(c.userData.type==='wall') updateUIHealthBar(c, 1.8); });
 
@@ -1424,9 +1998,11 @@
                     const bp = bullets[i].position;
                     const ewp = new THREE.Vector3();
                     en.getWorldPosition(ewp);
-                    const bMinX=ewp.x-0.6, bMaxX=ewp.x+0.6, bMinY=ewp.y+0.15, bMaxY=ewp.y+0.85, bMinZ=ewp.z-0.9, bMaxZ=ewp.z+0.9;
-                    const hcz = ewp.z + Math.cos(en.rotation.y)*1.0, hcx = ewp.x + Math.sin(en.rotation.y)*1.0;
-                    const hMinX=hcx-0.4, hMaxX=hcx+0.4, hMinY=ewp.y+0.35, hMaxY=ewp.y+0.95, hMinZ=hcz-0.35, hMaxZ=hcz+0.35;
+                    // Scale hitbox dimensions by the enemy's uniform scale
+                    const s = en.scale.x;
+                    const bMinX=ewp.x-0.6*s, bMaxX=ewp.x+0.6*s, bMinY=ewp.y+0.15*s, bMaxY=ewp.y+0.85*s, bMinZ=ewp.z-0.9*s, bMaxZ=ewp.z+0.9*s;
+                    const hcz = ewp.z + Math.cos(en.rotation.y)*1.0*s, hcx = ewp.x + Math.sin(en.rotation.y)*1.0*s;
+                    const hMinX=hcx-0.4*s, hMaxX=hcx+0.4*s, hMinY=ewp.y+0.35*s, hMaxY=ewp.y+0.95*s, hMinZ=hcz-0.35*s, hMaxZ=hcz+0.35*s;
                     const isHead = bp.x>=hMinX && bp.x<=hMaxX && bp.y>=hMinY && bp.y<=hMaxY && bp.z>=hMinZ && bp.z<=hMaxZ;
                     const isBody = bp.x>=bMinX && bp.x<=bMaxX && bp.y>=bMinY && bp.y<=bMaxY && bp.z>=bMinZ && bp.z<=bMaxZ;
                     if(isHead || isBody) {
