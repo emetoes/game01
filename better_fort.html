@@ -8,8 +8,17 @@
 </head>
 <body>
     <div id="crosshair" class="crosshair"></div>
-    <div id="mats" class="mats">WOOD: 30</div>
+    <div id="mats" class="mats">🪵 30</div>
     <div id="coin-display" style="position:absolute;bottom:215px;right:25px;color:#f1c40f;font-size:24px;text-shadow:2px 2px 6px rgba(0,0,0,0.8);">🪙 0</div>
+
+    <!-- Biome + Weather badge -->
+    <div id="biome-badge" style="position:absolute;top:20px;right:20px;background:rgba(0,0,0,0.6);border-radius:10px;padding:8px 14px;color:#fff;font-size:13px;font-weight:700;text-align:right;border:1px solid rgba(255,255,255,0.15);line-height:1.6;">
+        <div id="biome-label" style="font-size:16px;">🌲 Forest</div>
+        <div id="weather-label" style="color:rgba(255,255,255,0.65);font-size:12px;">☀️ Clear</div>
+    </div>
+
+    <!-- Weather screen overlay (storm darkness, rain tint) -->
+    <div id="weather-overlay" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:5;opacity:0;transition:opacity 1.5s;"></div>
     <div id="kill-counter" class="stat-bar stat-bar--kills">ELIMINATIONS: 0</div>
     <div id="wave-counter" class="stat-bar stat-bar--wave">WAVE: 1</div>
     <div id="enemies-remaining" class="stat-bar stat-bar--enemies">ENEMIES: 5</div>
@@ -27,8 +36,6 @@
         <div id="slot2" class="slot">2<br>BOW</div>
         <div id="slot3" class="slot">3<br>SPEAR</div>
         <div id="slot4" class="slot">4<br>AXE</div>
-        <div class="slot">Q<br>RAMP</div>
-        <div class="slot">E<br>WALL</div>
     </div>
     <div id="hud" class="hud">
         <div class="bar"><div id="health-bar" class="bar__fill bar__fill--health"></div></div>
@@ -48,7 +55,7 @@
     
     <div id="start-screen" class="modal modal--start">
         <h1 class="modal__title modal__title--lg">CAPYBARA SURVIVOR</h1>
-        <p class="modal__subtitle">Survive waves of capybaras, build defenses, stay alive!</p>
+        <p class="modal__subtitle">Survive waves of capybaras — collect wood to reroll upgrades!</p>
         <div id="start-skill-preview" style="display:none;margin-bottom:20px;background:rgba(0,0,0,0.4);border-radius:10px;padding:12px 24px;color:#f1c40f;font-size:15px;font-weight:700;text-align:center;"></div>
         <button id="start-button" class="btn">START GAME</button>
     </div>
@@ -83,6 +90,12 @@
             <div id="upgrade-wave-badge" class="upgrade-screen__wave-badge">Wave 1 Complete</div>
             <h2 class="upgrade-screen__title">CHOOSE UPGRADE</h2>
             <p class="upgrade-screen__subtitle">Select one upgrade to power up your arsenal</p>
+            <div style="display:flex;align-items:center;gap:14px;justify-content:center;margin-top:10px;">
+                <span id="upgrade-wood-display" style="color:#8bc34a;font-size:16px;font-weight:700;text-shadow:1px 1px 4px rgba(0,0,0,0.8);">🪵 0 wood</span>
+                <button id="reroll-btn" style="padding:8px 22px;font-size:14px;font-family:'Arial Black',sans-serif;background:rgba(139,195,74,0.25);border:2px solid #8bc34a;border-radius:8px;cursor:pointer;color:#8bc34a;font-weight:700;transition:all 0.15s;" onmouseover="this.style.background='rgba(139,195,74,0.45)'" onmouseout="this.style.background='rgba(139,195,74,0.25)'">
+                    🔄 Reroll <span id="reroll-cost-display">(15 🪵)</span>
+                </button>
+            </div>
         </div>
         <div id="upgrade-cards" class="upgrade-cards"></div>
     </div>
@@ -262,7 +275,7 @@
             currentArrows = maxArrows;
             const woodRank = savedRanks['startwood'] || 0;
             wood = 30 + woodRank * 30;
-            document.getElementById('mats').innerText = `WOOD: ${wood}`;
+            document.getElementById('mats').innerText = `🪵 ${wood}`;
             document.getElementById('health-bar').style.width = '100%';
         }
 
@@ -586,17 +599,53 @@
         }
 
         let upgradeScreenOpen = false;
+        let rerollCount = 0; // resets each wave, cost escalates
+
+        function getRerollCost() {
+            return 15 + rerollCount * 10; // 15, 25, 35, 45...
+        }
 
         function showUpgradeScreen(waveCompleted) {
             upgradeScreenOpen = true;
+            rerollCount = 0; // reset reroll count for this wave
             const screen = document.getElementById('upgrade-screen');
             document.getElementById('upgrade-wave-badge').textContent = `Wave ${waveCompleted} Complete`;
-            
+
+            // Wire reroll button (add listener once, replace each call via renderCards)
+            const rerollBtn = document.getElementById('reroll-btn');
+            rerollBtn.onclick = () => {
+                const cost = getRerollCost();
+                if(wood < cost) {
+                    // Flash red briefly
+                    rerollBtn.style.borderColor = '#e74c3c';
+                    rerollBtn.style.color = '#e74c3c';
+                    setTimeout(() => { rerollBtn.style.borderColor='#8bc34a'; rerollBtn.style.color='#8bc34a'; }, 400);
+                    return;
+                }
+                wood -= cost;
+                rerollCount++;
+                document.getElementById('mats').innerText = `🪵 ${wood}`;
+                playSound(300, 0.08, 'sine', 0.08);
+                renderUpgradeCards();
+            };
+
+            screen.classList.add('is-visible');
+            if(document.pointerLockElement) document.exitPointerLock();
+            renderUpgradeCards();
+        }
+
+        function renderUpgradeCards() {
+            const cost = getRerollCost();
+            const canAfford = wood >= cost;
+            const rerollBtn = document.getElementById('reroll-btn');
+            document.getElementById('upgrade-wood-display').innerText = `🪵 ${wood} wood`;
+            document.getElementById('reroll-cost-display').innerText = `(${cost} 🪵)`;
+            rerollBtn.style.opacity = canAfford ? '1' : '0.45';
+            rerollBtn.style.cursor = canAfford ? 'pointer' : 'default';
+
             const cards = document.getElementById('upgrade-cards');
             cards.innerHTML = '';
-            
             const options = pickThreeUpgrades();
-            
             options.forEach(({ template, variant }) => {
                 const rarity = RARITIES[variant.rarity];
                 const card = document.createElement('div');
@@ -623,10 +672,6 @@
                 });
                 cards.appendChild(card);
             });
-            
-            screen.classList.add('is-visible');
-            // Release pointer lock so the cursor is free — no need to fight it
-            if (document.pointerLockElement) document.exitPointerLock();
         }
 
         function closeUpgradeScreen() {
@@ -715,7 +760,6 @@
             setTimeout(() => playSound(150, 0.05, 'square', 0.06), 50);
         }
         function hitSound() { playSound(100, 0.1, 'triangle', 0.12); }
-        function buildSound() { playSound(200, 0.15, 'sawtooth', 0.1); }
         function damageSound() { playSound(80, 0.2, 'sawtooth', 0.12); }
         function reloadSound() {
             playSound(400, 0.1, 'sine', 0.08);
@@ -824,21 +868,32 @@
             moonMesh.position.y = -sunMesh.position.y;
             moonMesh.position.z = -sunMesh.position.z;
             sun.position.copy(sunMesh.position);
+            const b = BIOME_DEFS[currentBiome];
+            const wDef = WEATHER_DEFS[currentWeather];
+            // Fog range modified by weather
+            const effectiveFogFar = b.fogFar * wDef.fogMult;
+            scene.fog.near = b.fogNear * wDef.fogMult;
+            scene.fog.far  = effectiveFogFar;
             const isDaytime = sunHeight > 0;
             const dayProgress = Math.max(0, sunHeight);
             const nightProgress = Math.max(0, -sunHeight);
             if(isDaytime) {
-                const skyColor = new THREE.Color(0x87CEEB).lerp(new THREE.Color(0xff9966), (1 - dayProgress) * 0.5);
-                scene.background = skyColor; scene.fog.color = skyColor;
+                const skyDay   = new THREE.Color(b.skyDay);
+                const skyDawn  = new THREE.Color(b.dawnTint);
+                const skyColor = skyDay.clone().lerp(skyDawn, (1 - dayProgress) * 0.5);
+                scene.background = skyColor; scene.fog.color.copy(skyColor);
                 ambientLight.intensity = 0.4 + dayProgress * 0.3;
                 sun.intensity = 0.8 + dayProgress * 0.4;
                 hemiLight.intensity = 0.2 + dayProgress * 0.2;
                 stars.forEach(s => s.visible = false);
                 moonMesh.visible = false; sunMesh.visible = true;
-                clouds.forEach(c => c.material.opacity = 0.5 + dayProgress * 0.3);
+                const co = wDef.cloudOpacity;
+                clouds.forEach(c => c.material.opacity = Math.min(co, 0.5 + dayProgress * 0.3));
             } else {
-                const nightSky = new THREE.Color(0x0a0a1a).lerp(new THREE.Color(0x87CEEB), (1 - nightProgress));
-                scene.background = nightSky; scene.fog.color = nightSky;
+                const skyNight = new THREE.Color(b.skyNight);
+                const skyDay2  = new THREE.Color(b.skyDay);
+                const nightSky = skyNight.clone().lerp(skyDay2, (1 - nightProgress));
+                scene.background = nightSky; scene.fog.color.copy(nightSky);
                 ambientLight.intensity = 0.15 + (1 - nightProgress) * 0.3;
                 sun.intensity = 0.3 + (1 - nightProgress) * 0.5;
                 hemiLight.intensity = 0.05 + (1 - nightProgress) * 0.2;
@@ -859,12 +914,128 @@
             });
         }
 
+        // =====================================================================
+        // BIOME SYSTEM
+        // =====================================================================
+        const BIOME_DEFS = {
+            forest:  { name:'Forest',    icon:'🌲', floorColor:0x4caf50, floorRough:0.85, skyDay:0x87CEEB, skyNight:0x0a0a1a, dawnTint:0xff9966, fogNear:50,  fogFar:150, hemiGround:0x4a7c59, rockChance:0.30, waterChance:0.15, waterColor:0x2255cc, waterLabel:'Puddles',  iceSlide:false },
+            desert:  { name:'Desert',    icon:'🏜️', floorColor:0xd4a843, floorRough:0.95, skyDay:0xecc97a, skyNight:0x0d0a06, dawnTint:0xff7700, fogNear:70,  fogFar:200, hemiGround:0xc4982d, rockChance:0.55, waterChance:0.00, waterColor:0x0,        waterLabel:'',         iceSlide:false },
+            snow:    { name:'Snowfield', icon:'❄️', floorColor:0xe8eff5, floorRough:0.55, skyDay:0xb8d4e8, skyNight:0x08101a, dawnTint:0xffccaa, fogNear:22,  fogFar:85,  hemiGround:0x8aaabb, rockChance:0.25, waterChance:0.22, waterColor:0xaaccdd, waterLabel:'Ice',      iceSlide:true  }
+        };
+        const BIOME_SEQUENCE = ['forest','desert','snow'];
+        let currentBiome = 'forest';
+        const waterZonesList = []; // { x, z, r, ice }
+
+        function getBiomeForWave(wave) {
+            return BIOME_SEQUENCE[Math.floor((wave - 1) / 10) % 3];
+        }
+
+        function applyBiome(name) {
+            const b = BIOME_DEFS[name];
+            currentBiome = name;
+            scene.fog.near = b.fogNear;
+            scene.fog.far  = b.fogFar;
+            hemiLight.groundColor.set(b.hemiGround);
+            // Update existing chunk floors
+            terrainChunks.forEach(chunk => {
+                if(chunk.floor) { chunk.floor.material.color.set(b.floorColor); chunk.floor.material.roughness = b.floorRough; }
+            });
+            document.getElementById('biome-label').innerText = `${b.icon} ${b.name}`;
+        }
+
+        // =====================================================================
+        // WEATHER SYSTEM
+        // =====================================================================
+        const WEATHER_DEFS = {
+            clear:  { label:'☀️ Clear',   fogMult:1.0, overlayColor:'',                       overlayOpacity:0,    cloudOpacity:0.6, darkens:false },
+            fog:    { label:'🌫️ Fog',     fogMult:0.3, overlayColor:'rgba(180,180,200,0.12)', overlayOpacity:0.7,  cloudOpacity:0.9, darkens:false },
+            rain:   { label:'🌧️ Rain',    fogMult:0.55, overlayColor:'rgba(30,50,80,0.18)',    overlayOpacity:0.55, cloudOpacity:0.95, darkens:false },
+            storm:  { label:'⛈️ Storm',   fogMult:0.4, overlayColor:'rgba(10,10,30,0.35)',     overlayOpacity:0.85, cloudOpacity:1.0,  darkens:true  }
+        };
+        const WEATHER_POOL = ['clear','clear','clear','fog','rain','rain','storm'];
+        let currentWeather = 'clear';
+        let lastLightningTime = 0;
+        let onIce = false;
+
+        function pickWeather() {
+            return WEATHER_POOL[Math.floor(Math.random() * WEATHER_POOL.length)];
+        }
+
+        function applyWeather(name) {
+            currentWeather = name;
+            const w = WEATHER_DEFS[name];
+            const overlay = document.getElementById('weather-overlay');
+            overlay.style.background = w.overlayColor;
+            overlay.style.opacity = w.overlayOpacity;
+            document.getElementById('weather-label').innerText = w.label;
+            rainMesh.visible = (name === 'rain' || name === 'storm');
+        }
+
+        // Rain particle system (InstancedMesh for performance)
+        const RAIN_COUNT = 400;
+        const rainGeom = new THREE.BoxGeometry(0.03, 0.55, 0.03);
+        const rainMat  = new THREE.MeshBasicMaterial({ color: 0x88aacc, transparent: true, opacity: 0.38 });
+        const rainMesh = new THREE.InstancedMesh(rainGeom, rainMat, RAIN_COUNT);
+        rainMesh.visible = false;
+        scene.add(rainMesh);
+        const _rainPos = [];
+        for(let i = 0; i < RAIN_COUNT; i++) _rainPos.push({ x:(Math.random()-0.5)*80, y:Math.random()*32, z:(Math.random()-0.5)*80 });
+        const _rainMat4 = new THREE.Matrix4();
+
+        function updateRain() {
+            if(!rainMesh.visible) return;
+            const px = player.position.x, pz = player.position.z;
+            const isStorm = currentWeather === 'storm';
+            const fallSpeed = isStorm ? 1.1 : 0.65;
+            const windX = isStorm ? 0.04 : 0;
+            for(let i = 0; i < RAIN_COUNT; i++) {
+                const p = _rainPos[i];
+                p.y -= fallSpeed;
+                p.x += windX;
+                if(p.y < -2 || Math.abs(p.x - px) > 45 || Math.abs(p.z - pz) > 45) {
+                    p.y = 28 + Math.random() * 6;
+                    p.x = px + (Math.random()-0.5) * 78;
+                    p.z = pz + (Math.random()-0.5) * 78;
+                }
+                _rainMat4.makeTranslation(p.x, p.y, p.z);
+                rainMesh.setMatrixAt(i, _rainMat4);
+            }
+            rainMesh.instanceMatrix.needsUpdate = true;
+        }
+
+        function updateStormLightning() {
+            if(currentWeather !== 'storm') return;
+            const now = Date.now();
+            if(now - lastLightningTime > 3500 + Math.random() * 5000) {
+                lastLightningTime = now;
+                const savedIntensity = ambientLight.intensity;
+                ambientLight.intensity = 3.5;
+                playSound(55, 0.6, 'sawtooth', 0.28);
+                setTimeout(() => { ambientLight.intensity = savedIntensity; }, 80);
+                setTimeout(() => { ambientLight.intensity = 3.0; }, 140);
+                setTimeout(() => { ambientLight.intensity = savedIntensity; }, 220);
+            }
+        }
+
+        function showBiomeWeatherBanner(biomeChanged, oldBiome, newBiome, weather) {
+            const el = document.createElement('div');
+            el.style.cssText = `position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:300;text-align:center;pointer-events:none;`;
+            let html = '';
+            if(biomeChanged) {
+                const b = BIOME_DEFS[newBiome];
+                html += `<div style="color:#fff;font-size:42px;font-family:'Arial Black',sans-serif;text-shadow:2px 2px 12px rgba(0,0,0,0.9);">${b.icon} ${b.name.toUpperCase()}</div>`;
+            }
+            const w = WEATHER_DEFS[weather];
+            html += `<div style="color:rgba(255,255,255,0.8);font-size:22px;margin-top:6px;text-shadow:1px 1px 6px rgba(0,0,0,0.8);">${w.label}</div>`;
+            el.innerHTML = html;
+            document.body.appendChild(el);
+            setTimeout(() => { el.style.transition='opacity 0.6s'; el.style.opacity='0'; setTimeout(()=>el.remove(), 700); }, 2200);
+        }
+
         let collidables = [];
-        const rampColliders = [];
         const enemies = [];
         const bullets = [];
         const trees = [];
-        const gridSize = 4;
         
         const chunkSize = 50;
         const renderDistance = 150;
@@ -880,48 +1051,198 @@
         function createTerrainChunk(chunkX, chunkZ) {
             const chunkKey = getChunkKey(chunkX, chunkZ);
             if(terrainChunks.has(chunkKey)) return;
-            const chunk = { key: chunkKey, x: chunkX, z: chunkZ, trees: [], floor: null };
+            const b = BIOME_DEFS[currentBiome];
+            const chunk = { key: chunkKey, x: chunkX, z: chunkZ, trees: [], obstacles: [], waterZones: [], floor: null };
+
+            // Floor
             const floorSegment = new THREE.Mesh(
                 new THREE.PlaneGeometry(chunkSize, chunkSize),
-                new THREE.MeshStandardMaterial({ color: 0x4caf50, roughness: 0.8, metalness: 0.2 })
+                new THREE.MeshStandardMaterial({ color: b.floorColor, roughness: b.floorRough, metalness: 0.1 })
             );
             floorSegment.rotation.x = -Math.PI / 2;
             floorSegment.position.set(chunkX * chunkSize + chunkSize/2, 0, chunkZ * chunkSize + chunkSize/2);
             floorSegment.receiveShadow = true;
             scene.add(floorSegment);
             chunk.floor = floorSegment;
+
             const seed = chunkX * 1000 + chunkZ;
-            const treesPerChunk = 3 + (Math.abs(seed) % 4);
-            for(let i = 0; i < treesPerChunk; i++) {
-                const pr1 = Math.abs(Math.sin(seed + i * 12.9898) * 43758.5453) % 1;
-                const pr2 = Math.abs(Math.sin(seed + i * 78.233) * 43758.5453) % 1;
-                const treeX = chunkX * chunkSize + pr1 * chunkSize;
-                const treeZ = chunkZ * chunkSize + pr2 * chunkSize;
-                if(Math.sqrt(treeX * treeX + treeZ * treeZ) < SPAWN_CLEAR_RADIUS) continue;
-                chunk.trees.push(createTreeAt(treeX, treeZ));
+            const pr = (n) => Math.abs(Math.sin(seed * 127.1 + n * 311.7) * 43758.5453) % 1;
+
+            // Trees / cacti / snow-trees
+            const treeCount = 3 + (Math.abs(seed) % 4);
+            for(let i = 0; i < treeCount; i++) {
+                const tx = chunkX * chunkSize + pr(i * 2) * chunkSize;
+                const tz = chunkZ * chunkSize + pr(i * 2 + 1) * chunkSize;
+                if(Math.sqrt(tx*tx + tz*tz) < SPAWN_CLEAR_RADIUS) continue;
+                chunk.trees.push(createTreeAt(tx, tz));
             }
+
+            // Rocks / boulders (biome-driven density + include tall cliff rocks)
+            if(pr(50) < b.rockChance) {
+                const rockCount = 1 + Math.floor(pr(51) * 3);
+                for(let i = 0; i < rockCount; i++) {
+                    const rx = chunkX * chunkSize + pr(60 + i*3) * chunkSize;
+                    const rz = chunkZ * chunkSize + pr(61 + i*3) * chunkSize;
+                    if(Math.sqrt(rx*rx + rz*rz) < SPAWN_CLEAR_RADIUS + 2) continue;
+                    const isCliff = (pr(62 + i*3) < 0.25); // 25% chance of tall cliff rock
+                    createRockAt(rx, rz, isCliff, chunk);
+                }
+            }
+
+            // Water / ice patches
+            if(b.waterChance > 0 && pr(80) < b.waterChance) {
+                const wx = chunkX * chunkSize + pr(81) * chunkSize;
+                const wz = chunkZ * chunkSize + pr(82) * chunkSize;
+                if(Math.sqrt(wx*wx + wz*wz) >= SPAWN_CLEAR_RADIUS + 3) {
+                    createWaterPatch(wx, wz, b, chunk);
+                }
+            }
+
             terrainChunks.set(chunkKey, chunk);
         }
-        
+
         function createTreeAt(x, z) {
             const tree = new THREE.Group();
-            const trunk = new THREE.Mesh(
-                new THREE.BoxGeometry(0.8, 3, 0.8),
-                new THREE.MeshStandardMaterial({ color: 0x5d4037, roughness: 0.9, metalness: 0.1 })
-            );
-            trunk.position.y = 1.5; trunk.castShadow = true; trunk.receiveShadow = true;
-            const leaves = new THREE.Mesh(
-                new THREE.BoxGeometry(2.5, 2.5, 2.5),
-                new THREE.MeshStandardMaterial({ color: 0x2e7d32, roughness: 0.8, metalness: 0.0 })
-            );
-            leaves.position.y = 3.5; leaves.castShadow = true; leaves.receiveShadow = true;
-            tree.add(trunk, leaves);
+            if(currentBiome === 'desert') {
+                // Cactus: tall green cylinder body + arm stubs
+                const bodyH = 2.8 + Math.random() * 1.4;
+                const body = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.28, 0.35, bodyH, 7),
+                    new THREE.MeshStandardMaterial({ color: 0x2e7d32, roughness: 0.8 })
+                );
+                body.position.y = bodyH / 2;
+                body.castShadow = true;
+                tree.add(body);
+                // Arms
+                const armH = 0.9; const armY = bodyH * 0.55;
+                [-1, 1].forEach(side => {
+                    if(Math.random() > 0.35) {
+                        const arm = new THREE.Mesh(
+                            new THREE.CylinderGeometry(0.16, 0.2, armH, 6),
+                            new THREE.MeshStandardMaterial({ color: 0x2e7d32, roughness: 0.8 })
+                        );
+                        arm.rotation.z = side * Math.PI / 2.5;
+                        arm.position.set(side * 0.55, armY, 0);
+                        arm.castShadow = true;
+                        tree.add(arm);
+                    }
+                });
+                // Add trunk as collidable
+                const col = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, bodyH, 6), body.material);
+                col.position.y = bodyH / 2;
+                col.userData.isTree = true; col.visible = false;
+                tree.add(col);
+                collidables.push(col);
+            } else if(currentBiome === 'snow') {
+                // Snow-capped pine
+                const trunk = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.7, 2.8, 0.7),
+                    new THREE.MeshStandardMaterial({ color: 0x4a3020, roughness: 0.9 })
+                );
+                trunk.position.y = 1.4; trunk.castShadow = true;
+                tree.add(trunk);
+                // Layered snow foliage
+                [[3.0, 2.6, 0.75], [2.2, 2.0, 0.55], [1.4, 1.4, 0.35]].forEach(([w, h, yOff]) => {
+                    const layer = new THREE.Mesh(
+                        new THREE.ConeGeometry(w * 0.5, h, 7),
+                        new THREE.MeshStandardMaterial({ color: 0xeef4ff, roughness: 0.6 })
+                    );
+                    layer.position.y = 2.8 + yOff * 3.5; layer.castShadow = true;
+                    tree.add(layer);
+                    // Green under-layer
+                    const green = new THREE.Mesh(
+                        new THREE.ConeGeometry(w * 0.42, h * 0.85, 7),
+                        new THREE.MeshStandardMaterial({ color: 0x1b5e20, roughness: 0.8 })
+                    );
+                    green.position.y = 2.8 + yOff * 3.5 - 0.15;
+                    tree.add(green);
+                });
+                trunk.userData.isTree = true;
+                collidables.push(trunk);
+            } else {
+                // Forest: original tree
+                const trunk = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.8, 3, 0.8),
+                    new THREE.MeshStandardMaterial({ color: 0x5d4037, roughness: 0.9, metalness: 0.1 })
+                );
+                trunk.position.y = 1.5; trunk.castShadow = true; trunk.receiveShadow = true;
+                const leaves = new THREE.Mesh(
+                    new THREE.BoxGeometry(2.5, 2.5, 2.5),
+                    new THREE.MeshStandardMaterial({ color: 0x2e7d32, roughness: 0.8 })
+                );
+                leaves.position.y = 3.5; leaves.castShadow = true;
+                tree.add(trunk, leaves);
+                trunk.userData.isTree = true;
+                collidables.push(trunk);
+            }
             tree.position.set(x, 0, z);
             scene.add(tree);
-            trunk.userData.isTree = true;
-            collidables.push(trunk);
             trees.push(tree);
             return tree;
+        }
+
+        function createRockAt(x, z, isCliff, chunk) {
+            const rockColors = [0x888888, 0x777766, 0x997755, 0x666677];
+            const col = rockColors[Math.floor(Math.random() * rockColors.length)];
+            const mat = new THREE.MeshStandardMaterial({ color: col, roughness: 0.9, metalness: 0.15 });
+
+            const group = new THREE.Group();
+            group.position.set(x, 0, z);
+
+            if(isCliff) {
+                // Tall cliff pillar — 2-3 stacked irregular boxes
+                const layers = 2 + Math.floor(Math.random() * 2);
+                let yOff = 0;
+                for(let l = 0; l < layers; l++) {
+                    const w = 1.4 - l * 0.25 + Math.random() * 0.4;
+                    const h = 1.6 + Math.random() * 1.2;
+                    const rock = new THREE.Mesh(new THREE.BoxGeometry(w, h, w + Math.random() * 0.5), mat);
+                    rock.position.set(Math.random() * 0.3 - 0.15, yOff + h/2, Math.random() * 0.3 - 0.15);
+                    rock.rotation.y = Math.random() * 0.5;
+                    rock.castShadow = true; rock.receiveShadow = true;
+                    group.add(rock);
+                    collidables.push(rock);
+                    chunk.obstacles.push(rock);
+                    yOff += h;
+                }
+            } else {
+                // Scattered smaller boulder(s)
+                const count = 1 + Math.floor(Math.random() * 3);
+                for(let r = 0; r < count; r++) {
+                    const sz = 0.5 + Math.random() * 1.1;
+                    const rock = new THREE.Mesh(new THREE.BoxGeometry(sz, sz * 0.65, sz * 0.85), mat);
+                    rock.position.set(Math.random() * 2 - 1, sz * 0.3, Math.random() * 2 - 1);
+                    rock.rotation.set(Math.random()*0.4, Math.random()*Math.PI, Math.random()*0.3);
+                    rock.castShadow = true; rock.receiveShadow = true;
+                    group.add(rock);
+                    collidables.push(rock);
+                    chunk.obstacles.push(rock);
+                }
+            }
+            scene.add(group);
+            chunk.obstacles.push(group); // track group for scene removal
+        }
+
+        function createWaterPatch(x, z, biomeDef, chunk) {
+            const r = 2.5 + Math.random() * 3;
+            const segs = 10;
+            const waterMesh = new THREE.Mesh(
+                new THREE.CircleGeometry(r, segs),
+                new THREE.MeshStandardMaterial({
+                    color: biomeDef.waterColor,
+                    roughness: biomeDef.iceSlide ? 0.05 : 0.15,
+                    metalness: biomeDef.iceSlide ? 0.5 : 0.4,
+                    transparent: true, opacity: 0.75
+                })
+            );
+            waterMesh.rotation.x = -Math.PI / 2;
+            waterMesh.position.set(x, 0.01, z);
+            waterMesh.receiveShadow = true;
+            scene.add(waterMesh);
+            chunk.obstacles.push(waterMesh);
+            const zone = { x, z, r, ice: biomeDef.iceSlide };
+            waterZonesList.push(zone);
+            chunk.waterZones.push(zone);
         }
         
         function removeTerrainChunk(key) {
@@ -937,6 +1258,18 @@
                 });
                 const ti = trees.indexOf(tree);
                 if(ti > -1) trees.splice(ti, 1);
+            });
+            // Remove rock/cliff obstacles
+            chunk.obstacles.forEach(obj => {
+                scene.remove(obj);
+                if(obj.geometry) { obj.geometry.dispose(); if(obj.material) obj.material.dispose(); }
+                const ci = collidables.indexOf(obj);
+                if(ci > -1) collidables.splice(ci, 1);
+            });
+            // Remove water zones from global list
+            chunk.waterZones.forEach(zone => {
+                const wi = waterZonesList.indexOf(zone);
+                if(wi > -1) waterZonesList.splice(wi, 1);
             });
             terrainChunks.delete(key);
         }
@@ -1340,67 +1673,6 @@
         
         for(let i=0; i<enemiesInWave; i++) spawnEnemy();
 
-        function damageWall(wall, amount) {
-            if (!wall.userData.health) return;
-            wall.userData.health -= amount;
-            hitSound();
-            if (!wall.userData.healthBarElement) {
-                const hBar = createHealthBar(true);
-                wall.userData.healthBarElement = hBar.container;
-                wall.userData.healthBarFill = hBar.fill;
-            }
-            wall.userData.healthBarElement.style.display = 'block';
-            wall.userData.healthBarFill.style.width = (wall.userData.health / wall.userData.maxHealth * 100) + '%';
-            if (wall.userData.health <= 0) {
-                if (wall.userData.healthBarElement) wall.userData.healthBarElement.remove();
-                scene.remove(wall);
-                collidables = collidables.filter(c => c !== wall);
-                hitSound();
-            }
-        }
-
-        function build(type) {
-            if(wood < 10) return;
-            const gx = Math.round(player.position.x / gridSize) * gridSize;
-            const gz = Math.round(player.position.z / gridSize) * gridSize;
-            const angle = player.rotation.y;
-            const snappedAngle = Math.round(angle / (Math.PI/2)) * (Math.PI/2);
-            let normAngle = snappedAngle % (Math.PI * 2);
-            if (normAngle < 0) normAngle += Math.PI * 2;
-            let piece;
-            if(type === 'wall') {
-                piece = new THREE.Mesh(
-                    new THREE.BoxGeometry(gridSize, 3, 0.2),
-                    new THREE.MeshStandardMaterial({color:0x5d4037,side:THREE.DoubleSide,roughness:0.8,metalness:0.2})
-                );
-                const ox = Math.round(-Math.sin(normAngle)) * (gridSize/2);
-                const oz = Math.round(-Math.cos(normAngle)) * (gridSize/2);
-                piece.position.set(gx+ox, 1.5, gz+oz);
-                piece.rotation.y = snappedAngle;
-                piece.userData.type = 'wall'; piece.userData.health = 100; piece.userData.maxHealth = 100;
-                piece.castShadow=true; piece.receiveShadow=true;
-                collidables.push(piece);
-            } else {
-                const rampGroup = new THREE.Group();
-                const rampSurface = new THREE.Mesh(
-                    new THREE.BoxGeometry(gridSize,0.2,gridSize*1.414),
-                    new THREE.MeshStandardMaterial({color:0x8b4513,roughness:0.9,metalness:0.1})
-                );
-                rampSurface.position.y = gridSize/2;
-                rampSurface.rotation.x = -Math.PI/4;
-                rampSurface.castShadow=true; rampSurface.receiveShadow=true;
-                rampGroup.add(rampSurface);
-                rampGroup.position.set(gx,0,gz);
-                rampGroup.rotation.y = snappedAngle + Math.PI;
-                piece = rampGroup;
-                rampColliders.push(rampSurface);
-            }
-            wood -= 10;
-            document.getElementById('mats').innerText = `WOOD: ${wood}`;
-            scene.add(piece);
-            buildSound();
-        }
-
         function useWeapon() {
             if (activeSlot === 1) shootKnife();
             else if (activeSlot === 3) throwSpear();
@@ -1561,7 +1833,7 @@
             const healAmt = skillTree.healPerKill;
             health = Math.min(health + healAmt, maxPlayerHealth);
             updateAmmoDisplay();
-            document.getElementById('mats').innerText = `WOOD: ${wood}`;
+            document.getElementById('mats').innerText = `🪵 ${wood}`;
             document.getElementById('health-bar').style.width = (health / maxPlayerHealth * 100) + '%';
 
             // Coin reward — boss worth more
@@ -1592,19 +1864,36 @@
             enemiesInWave = 5 + (currentWave - 1) * 2;
             document.getElementById('wave-counter').innerText = `WAVE: ${currentWave}`;
             document.getElementById('enemies-remaining').innerText = `ENEMIES: ${enemiesInWave}`;
-            
+
+            // Check biome change (every 10 waves)
+            const newBiome = getBiomeForWave(currentWave);
+            const biomeChanged = newBiome !== currentBiome;
+            if(biomeChanged) {
+                applyBiome(newBiome);
+                // Clear all terrain chunks so they regenerate with new biome
+                const keys = [...terrainChunks.keys()];
+                keys.forEach(k => removeTerrainChunk(k));
+                lastPlayerChunkPos = { x: Infinity, z: Infinity }; // force regeneration
+            }
+
+            // New weather every wave
+            const newWeather = pickWeather();
+            applyWeather(newWeather);
+
+            const isBossWave = (currentWave % 5 === 0);
+            let bannerText = isBossWave ? `⚠️ WAVE ${completedWave} COMPLETE! BOSS INCOMING!` : `WAVE ${completedWave} COMPLETE!`;
             const waveMsg = document.createElement('div');
             waveMsg.className = 'indicator indicator--center indicator--wave-complete';
-            const isBossWave = (currentWave % 5 === 0);
-            waveMsg.innerText = isBossWave ? `⚠️ WAVE ${completedWave} COMPLETE! BOSS INCOMING!` : `WAVE ${completedWave} COMPLETE!`;
+            waveMsg.innerText = bannerText;
             waveMsg.style.color = isBossWave ? '#ff4400' : '';
             document.body.appendChild(waveMsg);
-            
+
             pendingWaveSpawn = true;
             pendingWaveSize = enemiesInWave;
             window._bossSpawnedThisWave = false;
             setTimeout(() => {
                 waveMsg.remove();
+                if(biomeChanged || newWeather !== 'clear') showBiomeWeatherBanner(biomeChanged, currentBiome, newBiome, newWeather);
                 showUpgradeScreen(completedWave);
             }, 1800);
         }
@@ -1618,18 +1907,12 @@
             trees.forEach(tree => {
                 if(player.position.distanceTo(tree.position) < 4) {
                     wood += 10;
-                    document.getElementById('mats').innerText = `WOOD: ${wood}`;
+                    document.getElementById('mats').innerText = `🪵 ${wood}`;
                     tree.scale.set(1.2,1.2,1.2);
                     hitSound();
                     setTimeout(() => tree.scale.set(1,1,1), 100);
                 }
             });
-            const harvestRay = new THREE.Raycaster();
-            harvestRay.setFromCamera(new THREE.Vector2(0,0), camera);
-            const hits = harvestRay.intersectObjects(collidables);
-            if(hits.length > 0 && hits[0].distance < 4 && hits[0].object.userData.type === 'wall') {
-                damageWall(hits[0].object, 10);
-            }
         }
         
         function updateAmmoDisplay() {
@@ -1742,8 +2025,6 @@
             if(e.code==='Digit2') { activeSlot=2; updateInventoryUI(); updateHeldWeapon(); updateAmmoDisplay(); }
             if(e.code==='Digit3') { activeSlot=3; bowCharging=false; updateInventoryUI(); updateHeldWeapon(); updateAmmoDisplay(); }
             if(e.code==='Digit4') { activeSlot=4; bowCharging=false; updateInventoryUI(); updateHeldWeapon(); updateAmmoDisplay(); }
-            if(e.code==='KeyQ') build('ramp');
-            if(e.code==='KeyE') build('wall');
             if(e.code==='KeyR') reload();
         };
         window.onkeyup = (e) => keys[e.code] = false;
@@ -1809,6 +2090,8 @@
             
             updateDayNightCycle();
             animateClouds();
+            updateRain();
+            updateStormLightning();
             updatePowerUps();
             tryAutoFire();
             
@@ -1829,16 +2112,28 @@
             if(keys['KeyS']) { moveDir.z += 1; isMoving = true; }
             if(keys['KeyA']) { moveDir.x -= 1; isMoving = true; }
             if(keys['KeyD']) { moveDir.x += 1; isMoving = true; }
+
+            // Check if player is on water or ice
+            let waterMult = 1.0, iceDecel = false;
+            for(const zone of waterZonesList) {
+                const dx = player.position.x - zone.x, dz = player.position.z - zone.z;
+                if(dx*dx + dz*dz < zone.r * zone.r) {
+                    if(zone.ice) { iceDecel = true; }
+                    else { waterMult = 0.45; }
+                    break;
+                }
+            }
+
             const isSprinting = (keys['ShiftLeft'] || keys['ShiftRight']) && isMoving;
-            const speed = isSprinting ? baseSpeed * sprintMult : baseSpeed;
+            const speed = (isSprinting ? baseSpeed * sprintMult : baseSpeed) * waterMult;
             moveDir.normalize().applyQuaternion(player.quaternion);
             if(isMoving) { playerVelocity.lerp(moveDir.multiplyScalar(speed), 0.03); }
-            else { playerVelocity.multiplyScalar(0.85); }
+            else { playerVelocity.multiplyScalar(iceDecel ? 0.995 : 0.85); } // ice is slippery
             document.getElementById('sprint-indicator').classList.toggle('u-hidden', !isSprinting);
             
             if(playerVelocity.length() > 0.001) {
                 const ray = new THREE.Raycaster(new THREE.Vector3(player.position.x,0.5,player.position.z), playerVelocity.clone().normalize());
-                const hits = ray.intersectObjects([...collidables, ...rampColliders]);
+                const hits = ray.intersectObjects(collidables);
                 const blocked = hits.length > 0 && hits[0].distance < 0.8;
                 const nx = player.position.x + playerVelocity.x;
                 const nz = player.position.z + playerVelocity.z;
@@ -1858,7 +2153,7 @@
             const activeFloors = [];
             terrainChunks.forEach(c => { if(c.floor) activeFloors.push(c.floor); });
             const pDownRay = new THREE.Raycaster(new THREE.Vector3(player.position.x, player.position.y+1.2, player.position.z), new THREE.Vector3(0,-1,0));
-            const pHit = pDownRay.intersectObjects([...collidables, ...rampColliders, ...activeFloors]);
+            const pHit = pDownRay.intersectObjects([...collidables, ...activeFloors]);
             if(pHit.length > 0 && pHit[0].distance <= 1.25) { player.position.y = (player.position.y+1.2) - pHit[0].distance; playerVY=0; playerGrounded=true; }
             else playerGrounded = false;
             if(keys['Space'] && playerGrounded) { playerVY=0.2; playerGrounded=false; }
@@ -1898,20 +2193,9 @@
                     }
                 }
 
-                // --- SCOUT / BOSS: jump over walls ---
-                if(type === 'scout' || type === 'boss') {
-                    const wallRay = new THREE.Raycaster(new THREE.Vector3(en.position.x,0.5,en.position.z), dirToPlayer);
-                    const wallHits = wallRay.intersectObjects(collidables.filter(c => c.userData.type === 'wall'));
-                    if(wallHits.length > 0 && wallHits[0].distance < 2.5 && now - en.userData.lastJump > en.userData.jumpCooldown) {
-                        en.userData.vY = 0.28;
-                        en.userData.lastJump = now;
-                    }
-                }
-
                 const eRay = new THREE.Raycaster(new THREE.Vector3(en.position.x,0.5,en.position.z), dirToPlayer);
-                const eHits = eRay.intersectObjects([...collidables, ...rampColliders]);
+                const eHits = eRay.intersectObjects(collidables);
                 let isBlocked = (eHits.length > 0 && eHits[0].distance < 0.8);
-                let isAttackingWall = false;
 
                 // Spitters try to maintain preferred distance
                 if(type === 'spitter' && dist < (en.userData.preferredDistance * 0.7)) {
@@ -1919,29 +2203,22 @@
                     en.position.add(new THREE.Vector3(backDir.x,0,backDir.z).multiplyScalar(en.userData.speed));
                 } else if(!isBlocked && dist > en.userData.attackRange) {
                     en.position.add(new THREE.Vector3(dirToPlayer.x,0,dirToPlayer.z).multiplyScalar(en.userData.speed));
-                } else if(isBlocked && eHits[0].object.userData.type==='wall') {
-                    isAttackingWall = true;
-                    if(now - en.userData.lastAttack > en.userData.attackCooldown) {
-                        const wallDmg = type==='tank' ? 30 : type==='boss' ? 50 : 15;
-                        damageWall(eHits[0].object, wallDmg);
-                        en.userData.lastAttack = now;
-                    }
                 } else if(isBlocked) {
                     const rDir = new THREE.Vector3(-dirToPlayer.z,0,dirToPlayer.x).normalize();
                     const lDir = new THREE.Vector3(dirToPlayer.z,0,-dirToPlayer.x).normalize();
                     const rRay = new THREE.Raycaster(new THREE.Vector3(en.position.x,0.5,en.position.z), rDir);
                     const lRay = new THREE.Raycaster(new THREE.Vector3(en.position.x,0.5,en.position.z), lDir);
-                    const rH = rRay.intersectObjects([...collidables,...rampColliders]);
-                    const lH = lRay.intersectObjects([...collidables,...rampColliders]);
+                    const rH = rRay.intersectObjects(collidables);
+                    const lH = lRay.intersectObjects(collidables);
                     if(!(rH.length > 0 && rH[0].distance < 0.8)) en.position.add(rDir.multiplyScalar(en.userData.speed * 0.7));
                     else if(!(lH.length > 0 && lH[0].distance < 0.8)) en.position.add(lDir.multiplyScalar(en.userData.speed * 0.7));
                 }
 
-                animateCharacter(en, !isBlocked && dist > en.userData.attackRange, isAttackingWall);
+                animateCharacter(en, !isBlocked && dist > en.userData.attackRange, false);
                 en.rotation.y = Math.atan2(dirToPlayer.x, dirToPlayer.z);
                 en.position.y += en.userData.vY; en.userData.vY -= 0.01;
                 const eDown = new THREE.Raycaster(new THREE.Vector3(en.position.x,en.position.y+1.2,en.position.z), new THREE.Vector3(0,-1,0));
-                const eHit2 = eDown.intersectObjects([...collidables,...rampColliders,...activeFloors]);
+                const eHit2 = eDown.intersectObjects([...collidables, ...activeFloors]);
                 if(eHit2.length > 0 && eHit2[0].distance <= 1.25) { en.position.y=(en.position.y+1.2)-eHit2[0].distance; en.userData.vY=0; }
 
                 updateUIHealthBar(en, 2.2 * en.scale.y);
@@ -1974,6 +2251,7 @@
             }
 
             collidables.forEach(c => { if(c.userData.type==='wall') updateUIHealthBar(c, 1.8); });
+            // (wall health bars kept for safety, walls no longer buildable)
 
             // Bullet physics
             for(let i=bullets.length-1; i>=0; i--) {
@@ -1986,9 +2264,8 @@
                     bullets[i].userData.lastPos || bullets[i].position.clone().sub(bullets[i].userData.velocity),
                     bullets[i].userData.velocity.clone().normalize(), 0, bullets[i].userData.velocity.length()
                 );
-                const obsHits = bRay.intersectObjects([...collidables, ...rampColliders]);
+                const obsHits = bRay.intersectObjects(collidables);
                 if(obsHits.length > 0) {
-                    if(obsHits[0].object.userData.type==='wall') damageWall(obsHits[0].object, 10);
                     scene.remove(bullets[i]); bullets.splice(i, 1); continue;
                 }
                 bullets[i].userData.lastPos = bullets[i].position.clone();

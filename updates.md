@@ -39,7 +39,6 @@
 16. Biomes - Forest, desert, snow (different every 10 waves)
 17. Weather effects - Rain (reduced visibility), fog, storms
 18. Obstacles - Rocks, water hazards, cliffs
-19. Safe zones - Areas where you can build without capybaras spawning
 
 ## 🎯 Game Modes & Features
 20. Difficulty modes - Easy/Normal/Hard/Nightmare
