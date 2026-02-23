@@ -4,12 +4,158 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Capybara Survivor</title>
-    <link rel="stylesheet" href="styles.css">
+    <style>
+/* ============================================================
+   Capybara Survivor — Inlined Stylesheet
+   ============================================================ */
+*,*::before,*::after{box-sizing:border-box;}
+body{margin:0;overflow:hidden;background-color:#6eb1ff;font-family:'Segoe UI','Roboto','Oxygen','Ubuntu','Cantarell',sans-serif;}
+
+/* Utilities */
+.u-hidden{display:none!important;}
+.u-visible{display:block!important;}
+.u-flex-visible{display:flex!important;}
+.u-flex{display:flex;}
+.u-flex-center{display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.u-text-center{text-align:center;}
+.u-center-h{position:absolute;left:50%;transform:translateX(-50%);}
+.u-overlay{position:absolute;top:0;left:0;width:100%;height:100%;z-index:1000;}
+.u-floating-indicator{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:100;pointer-events:none;font-weight:bold;}
+
+/* HUD */
+.hud{position:absolute;bottom:20px;right:20px;width:250px;padding:15px;background:rgba(0,0,0,0.7);border-radius:10px;border-bottom:5px solid #2196f3;box-shadow:0 4px 20px rgba(0,0,0,0.5);}
+.hud__stat{color:#fff;margin-top:10px;text-align:center;}
+.hud__stat--ammo{font-size:20px;}
+.hud__stat--reload{color:#f1c40f;font-size:16px;}
+.hud__stat--sprint{color:#2ecc71;font-size:14px;}
+
+/* Bars */
+.bar{width:100%;height:15px;background:#222;margin:4px 0;border-radius:2px;overflow:hidden;}
+.bar__fill{height:100%;border-radius:2px;transition:width 0.2s;}
+.bar__fill--health{width:100%;background:linear-gradient(90deg,#4ef037,#2ecc71);}
+.bar__fill--charge{width:0%;background:linear-gradient(90deg,#44aa99,#2ecc71);transition:width 0.05s;}
+.bar--charge{height:8px;margin-top:8px;background:#333;border-radius:4px;}
+
+/* Inventory */
+.inventory{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:10px;}
+.slot{width:60px;height:60px;background:rgba(0,0,0,0.6);border:2px solid #fff;border-radius:8px;color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;text-align:center;transition:all 0.2s;cursor:pointer;}
+.slot:hover{background:rgba(255,255,255,0.15);}
+.slot--active{background:rgba(255,255,255,0.3);border-color:#f1c40f;box-shadow:0 0 20px #f1c40f;transform:scale(1.1);}
+
+/* Crosshair */
+.crosshair{position:absolute;top:50%;left:50%;width:16px;height:16px;border:3px solid #fff;border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;box-shadow:0 0 10px rgba(0,0,0,0.5);}
+
+/* World health bars */
+.healthbar{position:absolute;width:60px;height:6px;background:rgba(0,0,0,0.7);border-radius:3px;transform:translate(-50%,-50%);pointer-events:none;display:none;border:1px solid rgba(255,255,255,0.3);}
+.healthbar__fill{height:100%;border-radius:3px;transition:width 0.2s;}
+.healthbar__fill--enemy{background:linear-gradient(90deg,#ff4444,#cc0000);}
+.healthbar__fill--wall{background:linear-gradient(90deg,#2196f3,#1976d2);}
+
+/* Top stats */
+.stat-bar{position:absolute;left:50%;transform:translateX(-50%);color:#fff;text-shadow:3px 3px 6px rgba(0,0,0,0.8);}
+.stat-bar--kills{top:20px;font-size:32px;}
+.stat-bar--wave{top:70px;font-size:36px;}
+.stat-bar--enemies{top:115px;color:#f1c40f;font-size:24px;}
+
+/* Materials */
+.mats{position:absolute;bottom:160px;right:25px;color:#ffd966;font-size:28px;text-shadow:3px 3px 6px rgba(0,0,0,0.8);}
+
+/* Modals */
+.modal{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1000;}
+.modal--start{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);}
+.modal--game-over{background:rgba(0,0,0,0.95);display:none;}
+.modal--game-over.is-visible{display:flex;}
+.modal__title{color:#fff;margin-bottom:20px;text-shadow:4px 4px 8px rgba(0,0,0,0.5);}
+.modal__title--lg{font-size:72px;font-family:'Arial Black','Impact',sans-serif;}
+.modal__title--xl{font-size:96px;color:#ff4444;text-shadow:4px 4px 8px rgba(0,0,0,0.8);}
+.modal__subtitle{color:#fff;font-size:24px;margin-bottom:40px;}
+.modal__stat{color:#f1c40f;font-size:36px;margin-bottom:10px;text-shadow:2px 2px 4px rgba(0,0,0,0.8);}
+.modal__stat--secondary{color:#fff;font-size:28px;margin-bottom:20px;}
+.modal__hint{color:#aaa;font-size:20px;}
+
+/* Buttons */
+.btn{padding:20px 60px;font-size:32px;font-family:'Arial Black','Impact',sans-serif;background:#f1c40f;border:none;border-radius:10px;cursor:pointer;color:#1a1a1a;box-shadow:0 8px 16px rgba(0,0,0,0.3);transition:transform 0.2s;}
+.btn:hover{transform:scale(1.1);}
+
+/* Indicators */
+.indicator{position:absolute;z-index:100;pointer-events:none;font-weight:bold;}
+.indicator--center{top:50%;left:50%;transform:translate(-50%,-50%);}
+.indicator--headshot{color:#ff4444;font-size:48px;text-shadow:3px 3px 6px rgba(0,0,0,0.8);}
+.indicator--wave-complete{color:#f1c40f;font-size:48px;text-shadow:4px 4px 8px rgba(0,0,0,0.8);}
+.indicator--heal{bottom:100px;right:30px;color:#4ef037;font-size:24px;text-shadow:2px 2px 4px rgba(0,0,0,0.8);}
+.indicator--fade-out{transition:opacity 0.5s,transform 0.5s;}
+.indicator--fade-out.is-exiting{opacity:0!important;}
+
+/* Upgrade tracker */
+.upgrade-tracker{position:absolute;top:20px;left:20px;max-width:220px;background:rgba(0,0,0,0.6);border-radius:10px;padding:10px 14px;border-left:3px solid #2196f3;}
+.upgrade-tracker__title{color:#2196f3;font-size:11px;font-weight:900;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;}
+
+/* Upgrade screen */
+.upgrade-screen{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.88);z-index:900;display:none;flex-direction:column;align-items:center;justify-content:center;padding:30px 20px;}
+.upgrade-screen.is-visible{display:flex;}
+.upgrade-screen__header{text-align:center;margin-bottom:28px;}
+.upgrade-screen__wave-badge{display:inline-block;padding:6px 20px;background:rgba(255,255,255,0.1);border-radius:20px;color:rgba(255,255,255,0.6);font-size:13px;letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;}
+.upgrade-screen__title{color:#fff;font-size:42px;font-family:'Arial Black',sans-serif;margin:0 0 6px;text-shadow:2px 2px 8px rgba(0,0,0,0.8);}
+.upgrade-screen__subtitle{color:rgba(255,255,255,0.55);font-size:16px;margin:0;}
+.upgrade-cards{display:flex;gap:20px;flex-wrap:wrap;justify-content:center;max-width:900px;}
+.upgrade-card{width:240px;background:rgba(255,255,255,0.06);border-radius:16px;padding:24px 20px;border:2px solid rgba(255,255,255,0.12);cursor:pointer;transition:transform 0.15s,box-shadow 0.15s,border-color 0.15s;position:relative;overflow:hidden;}
+.upgrade-card:hover{transform:translateY(-6px);}
+
+/* Rarity variants */
+.upgrade-card--common    { border-color: #555; }
+.upgrade-card--uncommon  { border-color: #1ec850; box-shadow: 0 0 10px rgba(30,200,80,0.25); }
+.upgrade-card--rare      { border-color: #3c82ff; box-shadow: 0 0 14px rgba(60,130,255,0.3); }
+.upgrade-card--epic      { border-color: #b43cff; box-shadow: 0 0 18px rgba(180,60,255,0.35); }
+.upgrade-card--legendary { border-color: #ffa500; box-shadow: 0 0 22px rgba(255,165,0,0.45); background: rgba(255,165,0,0.07); }
+
+/* Rarity top bar */
+.upgrade-card__rarity-bar { position:absolute; top:0; left:0; right:0; height:4px; border-radius:14px 14px 0 0; }
+.upgrade-card--common    .upgrade-card__rarity-bar { background: #555; }
+.upgrade-card--uncommon  .upgrade-card__rarity-bar { background: #1ec850; }
+.upgrade-card--rare      .upgrade-card__rarity-bar { background: #3c82ff; }
+.upgrade-card--epic      .upgrade-card__rarity-bar { background: #b43cff; }
+.upgrade-card--legendary .upgrade-card__rarity-bar { background: linear-gradient(90deg,#ffa500,#ffe066,#ffa500); }
+
+/* Card inner elements */
+.upgrade-card__icon        { font-size: 40px; display: block; margin-bottom: 10px; }
+.upgrade-card__rarity-label{ font-size: 11px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 6px; }
+.upgrade-card--common    .upgrade-card__rarity-label { color: #aaa; }
+.upgrade-card--uncommon  .upgrade-card__rarity-label { color: #1ec850; }
+.upgrade-card--rare      .upgrade-card__rarity-label { color: #3c82ff; }
+.upgrade-card--epic      .upgrade-card__rarity-label { color: #b43cff; }
+.upgrade-card--legendary .upgrade-card__rarity-label { color: #ffa500; }
+.upgrade-card__name  { font-size: 18px; font-weight: 900; color: #fff; margin-bottom: 8px; }
+.upgrade-card__desc  { font-size: 13px; color: rgba(255,255,255,0.55); margin: 0 0 12px; line-height: 1.5; }
+.upgrade-card__bonus { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 700; color: #f1c40f; margin-bottom: 8px; }
+.upgrade-card__bonus-icon { font-size: 12px; }
+.upgrade-card__applies { font-size: 11px; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 1px; }
+
+/* Skill tree nodes */
+.skill-node { background: rgba(255,255,255,0.06); border: 2px solid rgba(255,255,255,0.15); border-radius: 12px; padding: 16px; cursor: pointer; transition: all 0.2s; }
+.skill-node:hover { transform: translateY(-3px); }
+.skill-node.maxed { opacity: 0.5; cursor: default; }
+.skill-node__icon { font-size: 28px; margin-bottom: 8px; }
+.skill-node__name { font-size: 14px; font-weight: 900; color: #fff; margin-bottom: 4px; }
+.skill-node__desc { font-size: 12px; color: rgba(255,255,255,0.5); margin-bottom: 8px; line-height: 1.4; }
+.skill-node__rank { font-size: 11px; color: #f1c40f; font-weight: 700; }
+    </style>
 </head>
 <body>
+    <!-- ═══════════════════════════════════════════════════════
+         IN-GAME HUD — hidden until game starts
+         ═══════════════════════════════════════════════════════ -->
+    <div id="hud-root" style="display:none;position:absolute;top:0;left:0;width:100%;height:100%;z-index:10;pointer-events:none;">
+
     <div id="crosshair" class="crosshair"></div>
-    <div id="mats" class="mats">WOOD: 30</div>
+    <div id="mats" class="mats">🪵 30</div>
     <div id="coin-display" style="position:absolute;bottom:215px;right:25px;color:#f1c40f;font-size:24px;text-shadow:2px 2px 6px rgba(0,0,0,0.8);">🪙 0</div>
+
+    <!-- Biome + Weather badge -->
+    <div id="biome-badge" style="position:absolute;top:20px;right:20px;background:rgba(0,0,0,0.6);border-radius:10px;padding:8px 14px;color:#fff;font-size:13px;font-weight:700;text-align:right;border:1px solid rgba(255,255,255,0.15);line-height:1.6;">
+        <div id="biome-label" style="font-size:16px;">🌲 Forest</div>
+        <div id="weather-label" style="color:rgba(255,255,255,0.65);font-size:12px;">☀️ Clear</div>
+    </div>
+
     <div id="kill-counter" class="stat-bar stat-bar--kills">ELIMINATIONS: 0</div>
     <div id="wave-counter" class="stat-bar stat-bar--wave">WAVE: 1</div>
     <div id="enemies-remaining" class="stat-bar stat-bar--enemies">ENEMIES: 5</div>
@@ -27,8 +173,6 @@
         <div id="slot2" class="slot">2<br>BOW</div>
         <div id="slot3" class="slot">3<br>SPEAR</div>
         <div id="slot4" class="slot">4<br>AXE</div>
-        <div class="slot">Q<br>RAMP</div>
-        <div class="slot">E<br>WALL</div>
     </div>
     <div id="hud" class="hud">
         <div class="bar"><div id="health-bar" class="bar__fill bar__fill--health"></div></div>
@@ -45,12 +189,77 @@
         <div class="upgrade-tracker__title">⚡ Upgrades</div>
         <div id="upgrade-tracker-items"></div>
     </div>
-    
-    <div id="start-screen" class="modal modal--start">
-        <h1 class="modal__title modal__title--lg">CAPYBARA SURVIVOR</h1>
-        <p class="modal__subtitle">Survive waves of capybaras, build defenses, stay alive!</p>
-        <div id="start-skill-preview" style="display:none;margin-bottom:20px;background:rgba(0,0,0,0.4);border-radius:10px;padding:12px 24px;color:#f1c40f;font-size:15px;font-weight:700;text-align:center;"></div>
-        <button id="start-button" class="btn">START GAME</button>
+
+    <!-- Minimap -->
+    <canvas id="minimap" style="position:absolute;bottom:20px;left:20px;width:160px;height:160px;border-radius:50%;border:2px solid rgba(255,255,255,0.3);box-shadow:0 0 12px rgba(0,0,0,0.6);pointer-events:none;z-index:50;"></canvas>
+    <div id="minimap-label" style="position:absolute;bottom:10px;left:50px;color:rgba(255,255,255,0.35);font-size:10px;pointer-events:none;z-index:50;letter-spacing:1px;">MAP</div>
+
+    </div><!-- /hud-root -->
+
+    <!-- Weather screen overlay (outside hud-root so storms still show on upgrade screen) -->
+    <div id="weather-overlay" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:5;opacity:0;transition:opacity 1.5s;"></div>
+
+    <!-- Achievement toast container -->
+    <div id="achievement-toasts" style="position:absolute;top:20px;right:20px;display:flex;flex-direction:column;gap:8px;z-index:200;pointer-events:none;align-items:flex-end;"></div>
+
+    <div id="start-screen" class="modal modal--start" style="overflow-y:auto;align-items:center;justify-content:flex-start;padding:30px 20px;z-index:1000;">
+      <div style="width:100%;max-width:960px;margin:0 auto;">
+        <h1 class="modal__title modal__title--lg" style="text-align:center;margin-bottom:4px;">🐾 CAPYBARA SURVIVOR</h1>
+        <p class="modal__subtitle" style="text-align:center;margin-bottom:20px;">Survive waves of capybaras — collect wood to reroll upgrades!</p>
+
+        <!-- Skill preview banner -->
+        <div id="start-skill-preview" style="display:none;margin-bottom:16px;background:rgba(241,196,15,0.12);border:1px solid rgba(241,196,15,0.35);border-radius:10px;padding:10px 20px;color:#f1c40f;font-size:14px;font-weight:700;text-align:center;"></div>
+
+        <!-- Three columns: Mode | Difficulty | Leaderboard | Achievements -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:14px;margin-bottom:18px;">
+
+          <!-- MODE -->
+          <div style="background:rgba(0,0,0,0.45);border-radius:14px;padding:16px;border:1px solid rgba(255,255,255,0.1);">
+            <div style="color:#fff;font-size:13px;font-weight:900;letter-spacing:1px;margin-bottom:12px;text-align:center;">🎮 GAME MODE</div>
+            <div id="mode-btns" style="display:flex;flex-direction:column;gap:8px;"></div>
+          </div>
+
+          <!-- DIFFICULTY -->
+          <div style="background:rgba(0,0,0,0.45);border-radius:14px;padding:16px;border:1px solid rgba(255,255,255,0.1);">
+            <div style="color:#fff;font-size:13px;font-weight:900;letter-spacing:1px;margin-bottom:12px;text-align:center;">⚔️ DIFFICULTY</div>
+            <div id="diff-btns" style="display:flex;flex-direction:column;gap:8px;"></div>
+          </div>
+
+          <!-- LEADERBOARD -->
+          <div style="background:rgba(0,0,0,0.45);border-radius:14px;padding:16px;border:1px solid rgba(255,255,255,0.1);">
+            <div style="color:#fff;font-size:13px;font-weight:900;letter-spacing:1px;margin-bottom:10px;text-align:center;">🏆 LEADERBOARD</div>
+            <div id="leaderboard-list" style="font-size:12px;"></div>
+          </div>
+
+          <!-- ACHIEVEMENTS -->
+          <div style="background:rgba(0,0,0,0.45);border-radius:14px;padding:16px;border:1px solid rgba(255,255,255,0.1);overflow-y:auto;max-height:240px;">
+            <div style="color:#fff;font-size:13px;font-weight:900;letter-spacing:1px;margin-bottom:10px;text-align:center;">🏅 ACHIEVEMENTS</div>
+            <div id="start-ach-list" style="font-size:11px;"></div>
+          </div>
+        </div>
+
+        <!-- Challenge objective display (shown only in challenge mode) -->
+        <div id="challenge-info" style="display:none;margin-bottom:16px;background:rgba(255,165,0,0.12);border:1px solid rgba(255,165,0,0.4);border-radius:10px;padding:12px 20px;text-align:center;">
+          <div style="color:#ffa500;font-size:14px;font-weight:900;margin-bottom:4px;">🎯 CHALLENGE SELECTED</div>
+          <div id="challenge-desc" style="color:rgba(255,255,255,0.7);font-size:13px;"></div>
+        </div>
+
+        <!-- Customization row: Player skin + Weapon skin -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px;">
+          <div style="background:rgba(0,0,0,0.45);border-radius:14px;padding:16px;border:1px solid rgba(255,255,255,0.1);">
+            <div style="color:#fff;font-size:13px;font-weight:900;letter-spacing:1px;margin-bottom:12px;text-align:center;">🎨 PLAYER SKIN</div>
+            <div id="skin-btns" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;"></div>
+          </div>
+          <div style="background:rgba(0,0,0,0.45);border-radius:14px;padding:16px;border:1px solid rgba(255,255,255,0.1);">
+            <div style="color:#fff;font-size:13px;font-weight:900;letter-spacing:1px;margin-bottom:12px;text-align:center;">⚔️ WEAPON SKIN</div>
+            <div id="weapon-skin-btns" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;"></div>
+          </div>
+        </div>
+
+        <div style="text-align:center;">
+          <button id="start-button" class="btn">▶ PLAY</button>
+        </div>
+      </div>
     </div>
 
     <!-- Game Over + Skill Tree Screen -->
@@ -59,6 +268,10 @@
             <h1 class="modal__title modal__title--xl" style="text-align:center;margin-bottom:6px;">GAME OVER</h1>
             <p id="wave-stats" class="modal__stat" style="text-align:center;"></p>
             <p id="kill-stats" class="modal__stat modal__stat--secondary" style="text-align:center;"></p>
+            <p id="run-meta" style="text-align:center;color:rgba(255,255,255,0.45);font-size:14px;margin-bottom:4px;"></p>
+            <p id="leaderboard-result" style="text-align:center;color:#f1c40f;font-size:15px;font-weight:700;margin-bottom:8px;"></p>
+            <!-- Achievements earned this run -->
+            <div id="run-achievements" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:16px;min-height:10px;"></div>
             <!-- Skill point award banner -->
             <div id="sp-award-banner" style="text-align:center;margin:10px 0 20px;padding:10px 20px;background:rgba(241,196,15,0.15);border:2px solid #f1c40f;border-radius:12px;">
                 <span style="color:#f1c40f;font-size:22px;font-weight:900;">⭐ <span id="sp-awarded">0</span> SKILL POINTS EARNED</span>
@@ -83,6 +296,12 @@
             <div id="upgrade-wave-badge" class="upgrade-screen__wave-badge">Wave 1 Complete</div>
             <h2 class="upgrade-screen__title">CHOOSE UPGRADE</h2>
             <p class="upgrade-screen__subtitle">Select one upgrade to power up your arsenal</p>
+            <div style="display:flex;align-items:center;gap:14px;justify-content:center;margin-top:10px;">
+                <span id="upgrade-wood-display" style="color:#8bc34a;font-size:16px;font-weight:700;text-shadow:1px 1px 4px rgba(0,0,0,0.8);">🪵 0 wood</span>
+                <button id="reroll-btn" style="padding:8px 22px;font-size:14px;font-family:'Arial Black',sans-serif;background:rgba(139,195,74,0.25);border:2px solid #8bc34a;border-radius:8px;cursor:pointer;color:#8bc34a;font-weight:700;transition:all 0.15s;" onmouseover="this.style.background='rgba(139,195,74,0.45)'" onmouseout="this.style.background='rgba(139,195,74,0.25)'">
+                    🔄 Reroll <span id="reroll-cost-display">(15 🪵)</span>
+                </button>
+            </div>
         </div>
         <div id="upgrade-cards" class="upgrade-cards"></div>
     </div>
@@ -228,6 +447,40 @@
               apply(rank) { skillTree.coinsPerKill = rank * 2; } },
             { id: 'startwood', icon: '🌲',  name: 'Prepared',          desc: '+30 starting wood per rank', color:'#4caf50', maxRank: 5,  cost: 1,
               apply(rank) { /* applied at game start */ } },
+
+            // ── NEW OFFENSE ───────────────────────────────────────────────
+            { id: 'knife_dmg',  icon: '🗡️',  name: 'Knife Specialist',  desc: '+10 knife damage per rank',   color:'#e0e0e0', maxRank: 6,  cost: 1,
+              apply(rank) { playerUpgrades.knifeDamageBonus = rank * 10; } },
+            { id: 'bow_dmg',    icon: '🏹',  name: 'Bowmaster',         desc: '+12 bow damage per rank',     color:'#9b59b6', maxRank: 6,  cost: 1,
+              apply(rank) { playerUpgrades.bowDamageBonus = rank * 12; } },
+            { id: 'spear_dmg',  icon: '🏚️',  name: 'Spear Expert',      desc: '+15 spear damage per rank',   color:'#16a085', maxRank: 5,  cost: 1,
+              apply(rank) { playerUpgrades.spearDamageBonus = rank * 15; } },
+            { id: 'axe_dmg',    icon: '🪓',  name: 'Axe Crusher',       desc: '+20 axe damage per rank',     color:'#d35400', maxRank: 5,  cost: 1,
+              apply(rank) { playerUpgrades.axeDamageBonus = rank * 20; } },
+            { id: 'headhunter', icon: '💀',  name: 'Headhunter',        desc: '+0.5× headshot multiplier/rank', color:'#e74c3c', maxRank: 4, cost: 2,
+              apply(rank) { skillTree.headshotMult = 2.0 + rank * 0.5; } },
+            { id: 'magsize',    icon: '🔁',  name: 'Expanded Mag',      desc: '+10 knife mag size per rank', color:'#95a5a6', maxRank: 4,  cost: 1,
+              apply(rank) { maxMagSize = 30 + rank * 10; } },
+
+            // ── NEW DEFENSE ───────────────────────────────────────────────
+            { id: 'thick_hide', icon: '🦏',  name: 'Thick Hide',        desc: '8% damage reduction per rank', color:'#7f8c8d', maxRank: 4, cost: 2,
+              apply(rank) { skillTree.damageReduction = rank * 0.08; } },
+            { id: 'laststand',  icon: '⚰️',  name: 'Last Stand',        desc: 'Survive a fatal hit once per run', color:'#ff0066', maxRank: 1, cost: 3,
+              apply(rank) { skillTree.lastStandRanks = rank; } },
+            { id: 'wallhp',     icon: '💥',  name: 'Shockwave',         desc: 'Killing an enemy slows all enemies nearby by 60% for 2s per rank (larger radius)', color:'#795548', maxRank: 4,  cost: 2,
+              apply(rank) { skillTree.wallHPBonus = rank; } },
+
+            // ── NEW UTILITY ───────────────────────────────────────────────
+            { id: 'sprint_spd', icon: '💨',  name: 'Afterburner',       desc: '+12% sprint speed per rank',  color:'#1abc9c', maxRank: 4,  cost: 1,
+              apply(rank) { skillTree.sprintBonus = rank * 0.12; } },
+            { id: 'berserker',  icon: '😤',  name: 'Berserker',         desc: '+25% speed below 30% HP/rank', color:'#e74c3c', maxRank: 3, cost: 2,
+              apply(rank) { skillTree.berserkerRanks = rank; } },
+            { id: 'scavenger',  icon: '🎒',  name: 'Scavenger',         desc: '+12 reserve ammo per kill/rank', color:'#f39c12', maxRank: 5, cost: 1,
+              apply(rank) { skillTree.ammoPerKill = rank * 12; } },
+            { id: 'spear_start',icon: '🗺️',  name: 'Spear Cache',       desc: '+3 starting spears per rank', color:'#27ae60', maxRank: 4,  cost: 1,
+              apply(rank) { skillTree.spearCountBonus = rank * 3; } },
+            { id: 'jump',       icon: '🦘',  name: 'Spring Legs',       desc: '+25% jump height per rank',   color:'#3498db', maxRank: 4,  cost: 1,
+              apply(rank) { skillTree.jumpHeightBonus = rank * 0.05; } },
         ];
 
         // Load saved skill ranks from localStorage
@@ -262,8 +515,13 @@
             currentArrows = maxArrows;
             const woodRank = savedRanks['startwood'] || 0;
             wood = 30 + woodRank * 30;
-            document.getElementById('mats').innerText = `WOOD: ${wood}`;
+            document.getElementById('mats').innerText = `🪵 ${wood}`;
             document.getElementById('health-bar').style.width = '100%';
+            // New nodes
+            const magRank = savedRanks['magsize'] || 0;
+            if(magRank > 0) { maxMagSize = 30 + magRank * 10; currentAmmo = Math.min(currentAmmo, maxMagSize); }
+            currentSpears = Math.min(5 + skillTree.spearCountBonus, maxSpears);
+            skillTree.lastStandUsed = false; // reset each run
         }
 
         // Render the skill tree grid in the game over screen
@@ -318,15 +576,60 @@
         function showGameOver(wavesCompleted, totalKills) {
             gameStarted = false;
             document.exitPointerLock();
-            // Award skill points: 1 per wave, +1 bonus per boss wave survived
+            document.getElementById('hud-root').style.display = 'none';
+            setMusicForState('stop');
+            checkAchievements();
+
+            // Add leaderboard entry and get rank
+            const elapsed = Date.now() - runStartTime;
+            addLeaderboardEntry(wavesCompleted, totalKills, activeMode, activeDifficulty, activeChallenge, elapsed);
+
+            // Award skill points scaled by difficulty
+            const dm = getDifficultyMult();
             const bossWaveBonus = Math.floor(wavesCompleted / 5);
-            const earned = wavesCompleted + bossWaveBonus;
+            const earned = Math.round((wavesCompleted + bossWaveBonus) * dm.spGain);
             availableSkillPoints += earned;
             saveSkillPoints(availableSkillPoints);
 
+            // Format run time
+            const mins = Math.floor(elapsed/60000), secs = Math.floor((elapsed%60000)/1000);
+            const timeStr = `${mins}m ${secs.toString().padStart(2,'0')}s`;
+
             document.getElementById('wave-stats').innerText = `Waves Completed: ${wavesCompleted}`;
             document.getElementById('kill-stats').innerText = `Total Eliminations: ${totalKills}`;
+            const diffD = DIFFICULTIES[activeDifficulty]; const modeD = MODES[activeMode];
+            const challengeD = CHALLENGES.find(c=>c.id===activeChallenge);
+            let metaStr = `${diffD?.label||''} · ${modeD?.label||''} · ${timeStr}`;
+            if(activeMode === 'challenge' && challengeD) metaStr += ` · ${challengeD.label}`;
+            document.getElementById('run-meta').innerText = metaStr;
+
+            // Check leaderboard placement
+            const lb = loadLeaderboard();
+            const rank = lb.findIndex(e => e.waves===wavesCompleted && e.kills===totalKills && e.mode===activeMode && e.difficulty===activeDifficulty) + 1;
+            const lbEl = document.getElementById('leaderboard-result');
+            if(rank === 1) lbEl.innerText = '🥇 NEW #1 RECORD!';
+            else if(rank === 2) lbEl.innerText = '🥈 2nd Place!';
+            else if(rank === 3) lbEl.innerText = '🥉 3rd Place!';
+            else if(rank > 0 && rank <= 7) lbEl.innerText = `#${rank} on Leaderboard`;
+            else lbEl.innerText = '';
+
             document.getElementById('sp-awarded').innerText = earned;
+
+            // Show earned achievements
+            const achContainer = document.getElementById('run-achievements');
+            if (achContainer) {
+                achContainer.innerHTML = '';
+                ACHIEVEMENTS.filter(a => earnedAchievements.has(a.id)).forEach(a => {
+                    const badge = document.createElement('div');
+                    badge.title = a.desc;
+                    badge.style.cssText = 'background:rgba(241,196,15,0.12);border:1px solid rgba(241,196,15,0.3);border-radius:8px;padding:6px 12px;display:flex;align-items:center;gap:6px;';
+                    badge.innerHTML = `<span style="font-size:18px;">${a.icon}</span><span style="color:#fff;font-size:12px;font-weight:700;">${a.name}</span>`;
+                    achContainer.appendChild(badge);
+                });
+                if (achContainer.children.length === 0) {
+                    achContainer.innerHTML = '<span style="color:rgba(255,255,255,0.25);font-size:12px;">No achievements earned yet</span>';
+                }
+            }
             renderSkillTree();
             document.getElementById('game-over-screen').classList.add('is-visible');
         }
@@ -335,16 +638,207 @@
             location.reload();
         });
 
-        // Show skill preview on start screen if player has existing skills
-        function updateStartScreenPreview() {
-            const totalRanks = Object.values(savedRanks).reduce((s, v) => s + v, 0);
+        // =====================================================================
+        // DIFFICULTY / MODE / CHALLENGE SYSTEM
+        // =====================================================================
+        const DIFFICULTIES = {
+            easy:      { label:'😊 Easy',      color:'#4caf50', enemyHPMult:0.6,  enemySpeedMult:0.75, enemyDmgMult:0.5,  enemyCountMult:0.75, playerHPBonus:50,  spGain:0.5  },
+            normal:    { label:'⚔️ Normal',     color:'#2196f3', enemyHPMult:1.0,  enemySpeedMult:1.0,  enemyDmgMult:1.0,  enemyCountMult:1.0,  playerHPBonus:0,   spGain:1.0  },
+            hard:      { label:'💀 Hard',       color:'#ff9800', enemyHPMult:1.5,  enemySpeedMult:1.3,  enemyDmgMult:1.5,  enemyCountMult:1.4,  playerHPBonus:-20, spGain:1.5  },
+            nightmare: { label:'☠️ Nightmare',  color:'#e53935', enemyHPMult:2.2,  enemySpeedMult:1.6,  enemyDmgMult:2.2,  enemyCountMult:2.0,  playerHPBonus:-40, spGain:2.0  }
+        };
+        const MODES = {
+            normal:    { label:'🌊 Normal',     desc:'Classic waves. Survive as long as you can.',          color:'#2196f3' },
+            endless:   { label:'♾️ Endless',    desc:'Waves never stop. How long can you last?',             color:'#9c27b0' },
+            challenge: { label:'🎯 Challenge',  desc:'Special rules. Pick your challenge below.',           color:'#ff9800' }
+        };
+        const CHALLENGES = [
+            { id:'melee',  label:'🪓 Melee Only',    desc:'Only axe & knife allowed. Ranged weapons disabled.',       color:'#e53935' },
+            { id:'glass',  label:'🔮 Glass Cannon',  desc:'You have 1 HP but deal 4× damage. One hit = death.',       color:'#9c27b0' },
+            { id:'speed',  label:'⚡ Speed Run',     desc:'Enemies are 2× faster. Score is total enemies killed.',    color:'#ff9800' }
+        ];
+
+        let selectedDifficulty = localStorage.getItem('capybara_difficulty') || 'normal';
+        let selectedMode       = localStorage.getItem('capybara_mode')       || 'normal';
+        let selectedChallenge  = localStorage.getItem('capybara_challenge')  || 'melee';
+        let activeDifficulty   = 'normal'; // set at game start
+        let activeMode         = 'normal';
+        let activeChallenge    = 'melee';
+        let runStartTime       = 0;
+
+        function savePref(key, val) { try { localStorage.setItem(key, val); } catch(e) {} }
+
+        // =====================================================================
+        // LEADERBOARD
+        // =====================================================================
+        function loadLeaderboard() {
+            try { return JSON.parse(localStorage.getItem('capybara_lb') || '[]'); } catch(e) { return []; }
+        }
+        function saveLeaderboard(lb) {
+            try { localStorage.setItem('capybara_lb', JSON.stringify(lb.slice(0,20))); } catch(e) {}
+        }
+        function addLeaderboardEntry(waves, kills, mode, difficulty, challenge, timeMs) {
+            const lb = loadLeaderboard();
+            lb.push({ waves, kills, mode, difficulty, challenge: mode==='challenge' ? challenge : null, time: timeMs, date: Date.now() });
+            lb.sort((a,b) => b.waves - a.waves || b.kills - a.kills);
+            saveLeaderboard(lb);
+            // Return rank (1-based)
+            return lb.findIndex(e => e.date === lb.find(x => x.waves===waves && x.kills===kills && x.date)?.date) + 1;
+        }
+        function renderLeaderboard() {
+            const lb = loadLeaderboard();
+            const el = document.getElementById('leaderboard-list');
+            if(!el) return;
+            if(lb.length === 0) { el.innerHTML = '<div style="color:rgba(255,255,255,0.35);text-align:center;margin-top:12px;">No runs yet.<br>Be the first!</div>'; return; }
+            const top = lb.slice(0, 7);
+            el.innerHTML = top.map((e, i) => {
+                const medal = ['🥇','🥈','🥉'][i] || `${i+1}.`;
+                const modeD = MODES[e.mode] || MODES.normal;
+                const diffD = DIFFICULTIES[e.difficulty] || DIFFICULTIES.normal;
+                const mins = Math.floor((e.time||0)/60000), secs = Math.floor(((e.time||0)%60000)/1000);
+                const timeStr = e.time ? `${mins}m${secs.toString().padStart(2,'0')}s` : '';
+                return `<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.07);">
+                    <span style="color:${diffD.color};font-weight:700;font-size:13px;">${medal}</span>
+                    <span style="color:#fff;font-size:12px;margin:0 6px;">W${e.waves} · ${e.kills}💀</span>
+                    <span style="color:rgba(255,255,255,0.45);font-size:11px;">${modeD.label.split(' ')[0]} ${timeStr}</span>
+                </div>`;
+            }).join('');
+        }
+
+        // =====================================================================
+        // =====================================================================
+        // CHALLENGE CONSTRAINT HELPERS (checked at weapon-use time)
+        // =====================================================================
+        function isMeleeOnly() { return activeMode === 'challenge' && activeChallenge === 'melee'; }
+        function isGlassCannon() { return activeMode === 'challenge' && activeChallenge === 'glass'; }
+
+        // =====================================================================
+        // BUILD START SCREEN UI
+        // =====================================================================
+        function buildStartScreenUI() {
+            // Skill preview
+            const totalRanks = Object.values(savedRanks).reduce((s,v) => s+v, 0);
             const preview = document.getElementById('start-skill-preview');
-            if(totalRanks > 0) {
-                preview.style.display = 'block';
-                preview.innerText = `⭐ ${availableSkillPoints} skill points available · ${totalRanks} skill ranks active`;
+            if(preview && totalRanks > 0) { preview.style.display='block'; preview.innerText=`⭐ ${availableSkillPoints} skill points available · ${totalRanks} skill ranks active`; }
+
+            // --- Mode buttons ---
+            const modeBtns = document.getElementById('mode-btns');
+            if(modeBtns) {
+                modeBtns.innerHTML = '';
+                Object.entries(MODES).forEach(([key, m]) => {
+                    const btn = document.createElement('button');
+                    btn.dataset.key = key;
+                    btn.style.cssText = `width:100%;padding:10px 12px;border-radius:8px;font-size:13px;font-family:'Arial Black',sans-serif;cursor:pointer;border:2px solid ${key===selectedMode ? m.color : 'rgba(255,255,255,0.15)'};background:${key===selectedMode ? m.color+'28' : 'rgba(0,0,0,0.3)'};color:${key===selectedMode ? m.color : 'rgba(255,255,255,0.65)'};text-align:left;transition:all 0.15s;`;
+                    btn.innerHTML = `<div style="font-weight:900;">${m.label}</div><div style="font-size:11px;font-weight:400;opacity:0.7;margin-top:2px;">${m.desc}</div>`;
+                    btn.addEventListener('click', () => {
+                        selectedMode = key;
+                        savePref('capybara_mode', key);
+                        buildStartScreenUI();
+                    });
+                    modeBtns.appendChild(btn);
+                });
+
+                // Challenge sub-picker
+                const challengeInfo = document.getElementById('challenge-info');
+                const challengeDesc = document.getElementById('challenge-desc');
+                if(selectedMode === 'challenge') {
+                    challengeInfo.style.display = 'block';
+                    // Challenge picker inside the mode panel
+                    let sub = document.getElementById('challenge-sub');
+                    if(!sub) { sub = document.createElement('div'); sub.id = 'challenge-sub'; modeBtns.appendChild(sub); }
+                    sub.innerHTML = '';
+                    CHALLENGES.forEach(c => {
+                        const cbtn = document.createElement('button');
+                        cbtn.style.cssText = `width:100%;padding:8px 10px;border-radius:6px;font-size:12px;font-family:'Arial Black',sans-serif;cursor:pointer;border:2px solid ${c.id===selectedChallenge ? c.color : 'rgba(255,255,255,0.1)'};background:${c.id===selectedChallenge ? c.color+'22' : 'rgba(0,0,0,0.2)'};color:${c.id===selectedChallenge ? c.color : 'rgba(255,255,255,0.5)'};text-align:left;margin-top:6px;`;
+                        cbtn.innerHTML = `<span style="font-weight:900;">${c.label}</span><br><span style="font-size:10px;opacity:0.7;">${c.desc}</span>`;
+                        cbtn.addEventListener('click', (e) => { e.stopPropagation(); selectedChallenge=c.id; savePref('capybara_challenge',c.id); buildStartScreenUI(); });
+                        sub.appendChild(cbtn);
+                    });
+                    const sel = CHALLENGES.find(c=>c.id===selectedChallenge);
+                    if(sel) challengeDesc.innerText = sel.desc;
+                } else {
+                    challengeInfo.style.display = 'none';
+                }
+            }
+
+            // --- Difficulty buttons ---
+            const diffBtns = document.getElementById('diff-btns');
+            if(diffBtns) {
+                diffBtns.innerHTML = '';
+                Object.entries(DIFFICULTIES).forEach(([key, d]) => {
+                    const btn = document.createElement('button');
+                    btn.style.cssText = `width:100%;padding:10px 12px;border-radius:8px;font-size:13px;font-family:'Arial Black',sans-serif;cursor:pointer;border:2px solid ${key===selectedDifficulty ? d.color : 'rgba(255,255,255,0.15)'};background:${key===selectedDifficulty ? d.color+'28' : 'rgba(0,0,0,0.3)'};color:${key===selectedDifficulty ? d.color : 'rgba(255,255,255,0.65)'};text-align:left;transition:all 0.15s;`;
+                    const diffs = { easy:'Slower enemies · More HP · Fewer foes', normal:'Balanced experience', hard:'Faster & harder enemies', nightmare:'Brutal. Good luck.' };
+                    btn.innerHTML = `<span style="font-weight:900;">${d.label}</span><br><span style="font-size:11px;opacity:0.7;">${diffs[key]}</span>`;
+                    btn.addEventListener('click', () => { selectedDifficulty=key; savePref('capybara_difficulty',key); buildStartScreenUI(); });
+                    diffBtns.appendChild(btn);
+                });
+            }
+
+            // --- Leaderboard ---
+            renderLeaderboard();
+
+            // --- Skin selectors (functions declared later, guard with typeof) ---
+            if (typeof buildSkinUI === 'function') buildSkinUI();
+            if (typeof buildWeaponSkinUI === 'function') buildWeaponSkinUI();
+
+            // --- Achievements ---
+            const achList = document.getElementById('start-ach-list');
+            if (achList) {
+                achList.innerHTML = '';
+                ACHIEVEMENTS.forEach(a => {
+                    const earned = earnedAchievements.has(a.id);
+                    const row = document.createElement('div');
+                    row.style.cssText = `display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.05);opacity:${earned ? '1' : '0.35'};`;
+                    row.innerHTML = `<span style="font-size:16px;">${a.icon}</span><div><div style="color:${earned ? '#f1c40f' : '#fff'};font-weight:700;">${a.name}</div><div style="color:rgba(255,255,255,0.45);font-size:10px;">${a.desc}</div></div>`;
+                    achList.appendChild(row);
+                });
             }
         }
-        updateStartScreenPreview();
+
+        // Achievements must be declared BEFORE buildStartScreenUI() so the panel renders correctly
+        // Skins must also be declared here for the same reason (const in TDZ crashes buildSkinUI)
+        const PLAYER_SKINS = [
+            { id:'blue',    label:'Classic',   color:0x2196f3, head:0xffdbac, pants:0x2c3e50 },
+            { id:'red',     label:'Crimson',   color:0xe74c3c, head:0xffdbac, pants:0x1a252f },
+            { id:'green',   label:'Forest',    color:0x27ae60, head:0xffdbac, pants:0x1e3a1e },
+            { id:'purple',  label:'Shadow',    color:0x8e44ad, head:0xcccccc, pants:0x2d1540 },
+            { id:'gold',    label:'Gold',      color:0xf1c40f, head:0xffdbac, pants:0x7d6608 },
+            { id:'black',   label:'Stealth',   color:0x222222, head:0x999999, pants:0x111111 },
+            { id:'orange',  label:'Blaze',     color:0xe67e22, head:0xffdbac, pants:0x784212 },
+            { id:'pink',    label:'Bubblegum', color:0xff69b4, head:0xffdbac, pants:0x8b1a5a },
+        ];
+        const WEAPON_SKINS = [
+            { id:'default', label:'Normal',    bladeColor:0xc0c0c0, handleColor:0x3d2817, emissive:0x000000, glow:false },
+            { id:'golden',  label:'🥇 Gold',   bladeColor:0xffd700, handleColor:0x8B6914, emissive:0x554400, glow:false },
+            { id:'neon',    label:'⚡ Neon',   bladeColor:0x00ffee, handleColor:0x004040, emissive:0x00aaaa, glow:true  },
+            { id:'fire',    label:'🔥 Fire',   bladeColor:0xff6600, handleColor:0x400000, emissive:0x661100, glow:true  },
+            { id:'shadow',  label:'👻 Shadow', bladeColor:0x330066, handleColor:0x110022, emissive:0x220044, glow:false },
+            { id:'crystal', label:'💎 Gem',    bladeColor:0x88eeff, handleColor:0x226688, emissive:0x004455, glow:true  },
+        ];
+        let selectedSkin    = (function(){ try { return localStorage.getItem('capybara_skin')   ||'blue';    } catch(e){ return 'blue';    } })();
+        let selectedWepSkin = (function(){ try { return localStorage.getItem('capybara_wepskin')||'default'; } catch(e){ return 'default'; } })();
+
+        // Achievements must be declared BEFORE buildStartScreenUI()
+        const ACHIEVEMENTS = [
+            { id:'first_blood',   icon:'🩸', name:'First Blood',      desc:'Kill your first capybara',              check: () => (typeof killCount!=='undefined') && killCount >= 1 },
+            { id:'survivor',      icon:'🛡️', name:'Survivor',          desc:'Complete wave 5',                       check: () => (typeof currentWave!=='undefined') && currentWave > 5 },
+            { id:'warlord',       icon:'⚔️', name:'Warlord',           desc:'Complete wave 10',                      check: () => (typeof currentWave!=='undefined') && currentWave > 10 },
+            { id:'legend',        icon:'👑', name:'Legend',            desc:'Complete wave 20',                      check: () => (typeof currentWave!=='undefined') && currentWave > 20 },
+            { id:'headhunter',    icon:'🎯', name:'Headhunter',        desc:'Land 10 headshots in one run',          check: () => (window._headshotsThisRun||0) >= 10 },
+            { id:'sniper',        icon:'🏹', name:'Sniper',            desc:'Land 25 headshots in one run',          check: () => (window._headshotsThisRun||0) >= 25 },
+            { id:'lumberjack',    icon:'🪵', name:'Lumberjack',        desc:'Collect 500 wood in one run',           check: () => (typeof wood!=='undefined') && wood >= 500 },
+            { id:'boss_slayer',   icon:'💀', name:'Boss Slayer',       desc:'Kill your first boss',                  check: () => (window._bossesKilled||0) >= 1 },
+            { id:'exterminator',  icon:'🐭', name:'Exterminator',      desc:'Kill 100 capybaras in one run',         check: () => (typeof killCount!=='undefined') && killCount >= 100 },
+            { id:'untouchable',   icon:'✨', name:'Untouchable',       desc:'Complete a wave without taking damage', check: () => (window._wavesWithoutDamage||0) >= 1 },
+            { id:'nightmare_run', icon:'☠️', name:'Nightmare Runner',  desc:'Complete wave 5 on Nightmare',         check: () => (typeof activeDifficulty!=='undefined') && activeDifficulty==='nightmare' && (typeof currentWave!=='undefined') && currentWave > 5 },
+            { id:'glass_wave5',   icon:'🔮', name:'Glass Legend',      desc:'Complete wave 5 as Glass Cannon',      check: () => (typeof isGlassCannon==='function') && isGlassCannon() && (typeof currentWave!=='undefined') && currentWave > 5 },
+        ];
+        let earnedAchievements = new Set();
+        try { earnedAchievements = new Set(JSON.parse(localStorage.getItem('capybara_ach')||'[]')); } catch(e) {}
+        function saveAchievements() { try { localStorage.setItem('capybara_ach', JSON.stringify([...earnedAchievements])); } catch(e) {} }
+
+        buildStartScreenUI();
 
         // =====================================================================
         // SHOP SYSTEM (removed - replaced by post-death skill tree)
@@ -366,6 +860,17 @@
             coinsPerKill: 0,
             invincibilityBonus: 0,
             powerDropBonus: 0,
+            // new fields
+            damageReduction: 0,
+            berserkerRanks: 0,
+            headshotMult: 2.0,
+            ammoPerKill: 0,
+            wallHPBonus: 0,
+            sprintBonus: 0,
+            lastStandUsed: false,
+            lastStandRanks: 0,
+            spearCountBonus: 0,
+            jumpHeightBonus: 0,
         };
 
         // Current player upgrade stats (multipliers/bonuses on top of base values)
@@ -586,17 +1091,53 @@
         }
 
         let upgradeScreenOpen = false;
+        let rerollCount = 0; // resets each wave, cost escalates
+
+        function getRerollCost() {
+            return 15 + rerollCount * 10; // 15, 25, 35, 45...
+        }
 
         function showUpgradeScreen(waveCompleted) {
             upgradeScreenOpen = true;
+            rerollCount = 0; // reset reroll count for this wave
             const screen = document.getElementById('upgrade-screen');
             document.getElementById('upgrade-wave-badge').textContent = `Wave ${waveCompleted} Complete`;
-            
+
+            // Wire reroll button (add listener once, replace each call via renderCards)
+            const rerollBtn = document.getElementById('reroll-btn');
+            rerollBtn.onclick = () => {
+                const cost = getRerollCost();
+                if(wood < cost) {
+                    // Flash red briefly
+                    rerollBtn.style.borderColor = '#e74c3c';
+                    rerollBtn.style.color = '#e74c3c';
+                    setTimeout(() => { rerollBtn.style.borderColor='#8bc34a'; rerollBtn.style.color='#8bc34a'; }, 400);
+                    return;
+                }
+                wood -= cost;
+                rerollCount++;
+                document.getElementById('mats').innerText = `🪵 ${wood}`;
+                playSound(300, 0.08, 'sine', 0.08);
+                renderUpgradeCards();
+            };
+
+            screen.classList.add('is-visible');
+            if(document.pointerLockElement) document.exitPointerLock();
+            renderUpgradeCards();
+        }
+
+        function renderUpgradeCards() {
+            const cost = getRerollCost();
+            const canAfford = wood >= cost;
+            const rerollBtn = document.getElementById('reroll-btn');
+            document.getElementById('upgrade-wood-display').innerText = `🪵 ${wood} wood`;
+            document.getElementById('reroll-cost-display').innerText = `(${cost} 🪵)`;
+            rerollBtn.style.opacity = canAfford ? '1' : '0.45';
+            rerollBtn.style.cursor = canAfford ? 'pointer' : 'default';
+
             const cards = document.getElementById('upgrade-cards');
             cards.innerHTML = '';
-            
             const options = pickThreeUpgrades();
-            
             options.forEach(({ template, variant }) => {
                 const rarity = RARITIES[variant.rarity];
                 const card = document.createElement('div');
@@ -623,10 +1164,6 @@
                 });
                 cards.appendChild(card);
             });
-            
-            screen.classList.add('is-visible');
-            // Release pointer lock so the cursor is free — no need to fight it
-            if (document.pointerLockElement) document.exitPointerLock();
         }
 
         function closeUpgradeScreen() {
@@ -661,8 +1198,13 @@
         let pendingWaveSpawn = false;
         let pendingWaveSize = 0;
         function spawnNextWave() {
-            for(let i = 0; i < pendingWaveSize; i++) spawnEnemy();
+            const isSwarm = !!window._isSwarmWave;
+            for(let i = 0; i < pendingWaveSize; i++) {
+                spawnEnemy(isSwarm);
+                if (Math.random() < 0.25) setTimeout(() => capybaraAggroSound(), Math.random() * 1500);
+            }
             pendingWaveSpawn = false;
+            setMusicForState('intense');
         }
 
         // Helper to get effective fire rate (lower = faster)
@@ -683,7 +1225,8 @@
             if (type === 'spear')  bonus += playerUpgrades.spearDamageBonus;
             if (type === 'axe')    bonus += playerUpgrades.axeDamageBonus;
             const powerMult = isPowerUpActive('damage') ? 2.0 : 1.0;
-            return (base + bonus) * powerMult;
+            const glassMult = isGlassCannon() ? 4.0 : 1.0;
+            return (base + bonus) * powerMult * glassMult;
         }
 
         // Helper: range bonus in bullet life frames
@@ -715,7 +1258,6 @@
             setTimeout(() => playSound(150, 0.05, 'square', 0.06), 50);
         }
         function hitSound() { playSound(100, 0.1, 'triangle', 0.12); }
-        function buildSound() { playSound(200, 0.15, 'sawtooth', 0.1); }
         function damageSound() { playSound(80, 0.2, 'sawtooth', 0.12); }
         function reloadSound() {
             playSound(400, 0.1, 'sine', 0.08);
@@ -731,13 +1273,634 @@
                 lastFootstepTime = now;
             }
         }
-        
+
         // =====================================================================
-        // Scene Setup
+        // PARTICLE SYSTEM — dust clouds & explosions
+        // =====================================================================
+        const particles = [];
+
+        function spawnParticles(pos, count, opts = {}) {
+            for (let i = 0; i < count; i++) {
+                const size  = opts.size  || (0.08 + Math.random() * 0.18);
+                const color = opts.color || 0xbb8855;
+                const speed = opts.speed || 0.06;
+                const life  = opts.life  || 35;
+                const geom  = new THREE.SphereGeometry(size, 5, 5);
+                const mat   = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.85 });
+                const mesh  = new THREE.Mesh(geom, mat);
+                mesh.position.copy(pos).add(new THREE.Vector3(
+                    (Math.random() - 0.5) * 0.5,
+                    Math.random() * 0.6,
+                    (Math.random() - 0.5) * 0.5
+                ));
+                const angle = Math.random() * Math.PI * 2;
+                const upward = opts.explode ? (0.08 + Math.random() * 0.12) : (Math.random() * 0.04);
+                mesh.userData.vel = new THREE.Vector3(
+                    Math.cos(angle) * speed * (0.5 + Math.random()),
+                    upward,
+                    Math.sin(angle) * speed * (0.5 + Math.random())
+                );
+                mesh.userData.life     = life + Math.floor(Math.random() * 15);
+                mesh.userData.maxLife  = mesh.userData.life;
+                scene.add(mesh);
+                particles.push(mesh);
+            }
+        }
+
+        function spawnExplosionParticles(pos) {
+            // Fire/orange burst
+            spawnParticles(pos, 22, { color: 0xff6600, size: 0.18, speed: 0.14, life: 28, explode: true });
+            // Smoke puffs — grey, slower
+            spawnParticles(pos, 14, { color: 0x888888, size: 0.25, speed: 0.06, life: 50 });
+            // Sparks — bright yellow, fast
+            spawnParticles(pos, 18, { color: 0xffee44, size: 0.07, speed: 0.22, life: 18, explode: true });
+        }
+
+        function spawnDustParticles(pos) {
+            spawnParticles(pos, 6, { color: 0xbbaa88, size: 0.12, speed: 0.035, life: 40 });
+        }
+
+        function updateParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.userData.vel.y -= 0.003; // gravity
+                p.position.add(p.userData.vel);
+                p.userData.vel.multiplyScalar(0.94); // drag
+                p.userData.life--;
+                p.material.opacity = (p.userData.life / p.userData.maxLife) * 0.85;
+                if (p.userData.life <= 0) {
+                    scene.remove(p);
+                    p.geometry.dispose();
+                    p.material.dispose();
+                    particles.splice(i, 1);
+                }
+            }
+        }
+
+        // =====================================================================
+        // RAGDOLL DEATH ANIMATIONS
+        // =====================================================================
+        const ragdolls = [];
+
+        function spawnRagdoll(en) {
+            // Detach the capybara mesh from enemies array and animate it flying/tumbling
+            const rd = {
+                group: en,
+                vel: new THREE.Vector3(
+                    (Math.random() - 0.5) * 0.18,
+                    0.22 + Math.random() * 0.12,
+                    (Math.random() - 0.5) * 0.18
+                ),
+                rotVel: new THREE.Vector3(
+                    (Math.random() - 0.5) * 0.22,
+                    (Math.random() - 0.5) * 0.18,
+                    0.15 + Math.random() * 0.25
+                ),
+                life: 55,
+                maxLife: 55
+            };
+            // Tint red briefly
+            en.traverse(c => {
+                if (c.isMesh && c.material) {
+                    c.material = c.material.clone();
+                    c.material.color.set(0xff3300);
+                }
+            });
+            ragdolls.push(rd);
+        }
+
+        function updateRagdolls() {
+            for (let i = ragdolls.length - 1; i >= 0; i--) {
+                const rd = ragdolls[i];
+                rd.vel.y -= 0.018; // gravity
+                rd.group.position.add(rd.vel);
+                rd.vel.multiplyScalar(0.88);
+                rd.group.rotation.x += rd.rotVel.x;
+                rd.group.rotation.y += rd.rotVel.y;
+                rd.group.rotation.z += rd.rotVel.z;
+                rd.rotVel.multiplyScalar(0.9);
+                rd.life--;
+                // Fade out
+                const alpha = rd.life / rd.maxLife;
+                rd.group.traverse(c => {
+                    if (c.isMesh && c.material) c.material.opacity = alpha;
+                    if (c.isMesh && c.material) c.material.transparent = true;
+                });
+                if (rd.life <= 0) {
+                    scene.remove(rd.group);
+                    ragdolls.splice(i, 1);
+                }
+            }
+        }
+
+        // =====================================================================
+        // MINIMAP
+        // =====================================================================
+        const minimapCanvas = document.getElementById('minimap');
+        const minimapCtx    = minimapCanvas ? minimapCanvas.getContext('2d') : null;
+        minimapCanvas.width  = 160;
+        minimapCanvas.height = 160;
+        const MINIMAP_RADIUS = 160 / 2;   // px radius of the circular map
+        const MINIMAP_RANGE  = 90;         // world-units visible radius
+
+        function updateMinimap() {
+            if (!minimapCtx || !gameStarted) return;
+            const ctx = minimapCtx;
+            const W = minimapCanvas.width, H = minimapCanvas.height;
+            const cx = W / 2, cy = H / 2;
+
+            // Dark background circle
+            ctx.clearRect(0, 0, W, H);
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(cx, cy, MINIMAP_RADIUS, 0, Math.PI * 2);
+            ctx.clip();
+
+            ctx.fillStyle = 'rgba(0,0,0,0.72)';
+            ctx.fillRect(0, 0, W, H);
+
+            // Grid lines
+            ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+            ctx.lineWidth = 1;
+            for (let g = -MINIMAP_RANGE; g <= MINIMAP_RANGE; g += 20) {
+                const gx = cx + (g / MINIMAP_RANGE) * MINIMAP_RADIUS;
+                ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, H); ctx.stroke();
+                const gy = cy + (g / MINIMAP_RANGE) * MINIMAP_RADIUS;
+                ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke();
+            }
+
+            // Convert world pos to minimap px, rotated to face player direction
+            const yaw = player.rotation.y;
+            function worldToMM(wx, wz) {
+                const dx = wx - player.position.x;
+                const dz = wz - player.position.z;
+                // Rotate so player always faces up
+                const rx =  dx * Math.cos(-yaw) - dz * Math.sin(-yaw);
+                const rz =  dx * Math.sin(-yaw) + dz * Math.cos(-yaw);
+                return {
+                    x: cx + (rx / MINIMAP_RANGE) * MINIMAP_RADIUS,
+                    y: cy + (rz / MINIMAP_RANGE) * MINIMAP_RADIUS
+                };
+            }
+
+            // Draw water zones as blue blobs
+            for (const zone of waterZonesList) {
+                const mm = worldToMM(zone.x, zone.z);
+                const r  = Math.max(2, (zone.r / MINIMAP_RANGE) * MINIMAP_RADIUS);
+                ctx.beginPath();
+                ctx.arc(mm.x, mm.y, r, 0, Math.PI * 2);
+                ctx.fillStyle = zone.ice ? 'rgba(160,220,255,0.35)' : 'rgba(30,100,200,0.35)';
+                ctx.fill();
+            }
+
+            // Draw trees as tiny green dots
+            for (const tree of trees) {
+                const mm = worldToMM(tree.position.x, tree.position.z);
+                if (mm.x < 0 || mm.x > W || mm.y < 0 || mm.y > H) continue;
+                ctx.beginPath();
+                ctx.arc(mm.x, mm.y, 2, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(60,160,60,0.7)';
+                ctx.fill();
+            }
+
+            // Draw enemies — red dots, bosses are bigger
+            for (const en of enemies) {
+                const mm = worldToMM(en.position.x, en.position.z);
+                const r  = en.userData.isBoss ? 5 : 3;
+                ctx.beginPath();
+                ctx.arc(mm.x, mm.y, r, 0, Math.PI * 2);
+                ctx.fillStyle = en.userData.isBoss     ? '#ff6600'
+                              : en.userData.enemyType === 'armored' ? '#aaaaff'
+                              : en.userData.enemyType === 'healer'  ? '#00ee88'
+                              : en.userData.enemyType === 'ranged'  ? '#ffcc44'
+                              : '#ff3333';
+                ctx.fill();
+                // Pulse ring on boss
+                if (en.userData.isBoss) {
+                    ctx.beginPath();
+                    ctx.arc(mm.x, mm.y, r + 3 + Math.sin(Date.now() * 0.005) * 2, 0, Math.PI * 2);
+                    ctx.strokeStyle = 'rgba(255,100,0,0.5)';
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+                }
+            }
+
+            // Draw power-up drops as yellow stars
+            for (const pu of powerUpPickups) {
+                const mm = worldToMM(pu.position.x, pu.position.z);
+                ctx.beginPath();
+                ctx.arc(mm.x, mm.y, 3, 0, Math.PI * 2);
+                ctx.fillStyle = '#f1c40f';
+                ctx.fill();
+            }
+
+            // Draw player — white arrow triangle pointing up (always center)
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.beginPath();
+            ctx.moveTo(0, -7);
+            ctx.lineTo(5, 6);
+            ctx.lineTo(0, 3);
+            ctx.lineTo(-5, 6);
+            ctx.closePath();
+            ctx.fillStyle = '#ffffff';
+            ctx.fill();
+            ctx.restore();
+
+            // Outer vignette
+            const grad = ctx.createRadialGradient(cx, cy, MINIMAP_RADIUS * 0.65, cx, cy, MINIMAP_RADIUS);
+            grad.addColorStop(0, 'rgba(0,0,0,0)');
+            grad.addColorStop(1, 'rgba(0,0,0,0.6)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, W, H);
+
+            ctx.restore();
+
+            // Compass labels
+            ctx.fillStyle = 'rgba(255,255,255,0.4)';
+            ctx.font = 'bold 9px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText('N', cx, 11);
+            ctx.fillText('S', cx, H - 3);
+            ctx.fillText('W', 7, cy + 4);
+            ctx.fillText('E', W - 6, cy + 4);
+        }
+
+        // =====================================================================
+        // SOUND VARIETY — capybara calls + ambient nature
+        // =====================================================================
+        // Synthesise a "capybara grunt" — short burst of descending noise
+        function capybaraDeathSound() {
+            // Layered descending squeal
+            [280, 210, 160].forEach((f, i) => {
+                setTimeout(() => playSound(f, 0.18, 'sawtooth', 0.09 - i * 0.02), i * 55);
+            });
+        }
+        function capybaraAggroSound() {
+            playSound(320, 0.12, 'sawtooth', 0.06);
+            setTimeout(() => playSound(260, 0.1, 'sawtooth', 0.04), 70);
+        }
+        function capybaraBossRoar() {
+            [180, 130, 100, 80].forEach((f, i) => {
+                setTimeout(() => playSound(f, 0.35, 'sawtooth', 0.13 - i * 0.02), i * 90);
+            });
+        }
+
+        // Ambient nature sounds — birds, wind, water burbles
+        let ambientIntervalId = null;
+        let lastAmbientBiome  = null;
+
+        function playBirdChirp() {
+            const notes = [800, 1000, 900, 1100, 850];
+            notes.forEach((f, i) => setTimeout(() => playSound(f, 0.08, 'sine', 0.025), i * 110 + Math.random() * 80));
+        }
+        function playWindGust() {
+            // White-noise approximation: rapid random frequencies
+            for (let i = 0; i < 6; i++) {
+                setTimeout(() => playSound(80 + Math.random() * 40, 0.3, 'sawtooth', 0.018), i * 60);
+            }
+        }
+        function playWaterBurble() {
+            for (let i = 0; i < 4; i++) {
+                setTimeout(() => playSound(500 + Math.random() * 200, 0.07, 'sine', 0.02), i * 80);
+            }
+        }
+        function playSnowWind() {
+            for (let i = 0; i < 5; i++) {
+                setTimeout(() => playSound(60 + Math.random() * 30, 0.4, 'sawtooth', 0.015), i * 80);
+            }
+        }
+
+        function startAmbientSounds() {
+            if (ambientIntervalId) clearInterval(ambientIntervalId);
+            ambientIntervalId = setInterval(() => {
+                if (!gameStarted) return;
+                const biome = currentBiome || 'forest';
+                if (biome === 'forest') {
+                    if (Math.random() < 0.55) playBirdChirp();
+                    else playWindGust();
+                } else if (biome === 'desert') {
+                    playWindGust();
+                } else if (biome === 'snow') {
+                    if (Math.random() < 0.4) playSnowWind();
+                }
+                if (biome === 'forest' && Math.random() < 0.2) playWaterBurble();
+            }, 3800 + Math.random() * 2000);
+        }
+
+        // =====================================================================
+        // MUSIC SYSTEM — procedural calm / intense layers
+        // =====================================================================
+        let musicState    = 'none'; // 'calm' | 'intense' | 'none'
+        let musicNodes    = [];
+        let musicFadeTimer = null;
+
+        function stopMusic() {
+            musicNodes.forEach(n => {
+                try { n.gain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.4); setTimeout(() => { try { n.osc.stop(); } catch(e){} }, 600); } catch(e) {}
+            });
+            musicNodes = [];
+            musicState = 'none';
+        }
+
+        function startCalmMusic() {
+            if (musicState === 'calm') return;
+            stopMusic();
+            musicState = 'calm';
+            // Gentle ambient drone: 3 harmonically-related sine tones
+            const baseFreq = 110;
+            [[1, 0.018], [1.5, 0.012], [2, 0.008]].forEach(([mult, vol]) => {
+                const osc  = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.value = baseFreq * mult;
+                gain.gain.setValueAtTime(0, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(vol, audioCtx.currentTime + 2.5);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start();
+                musicNodes.push({ osc, gain });
+            });
+            // Slow LFO-like frequency wobble via setInterval
+            const wobbleId = setInterval(() => {
+                if (musicState !== 'calm') { clearInterval(wobbleId); return; }
+                musicNodes.forEach((n, i) => {
+                    const base = 110 * [1, 1.5, 2][i] || 110;
+                    n.osc.frequency.setTargetAtTime(base + Math.sin(Date.now() * 0.0004) * 3, audioCtx.currentTime, 0.8);
+                });
+            }, 200);
+        }
+
+        function startIntenseMusic() {
+            if (musicState === 'intense') return;
+            stopMusic();
+            musicState = 'intense';
+            // Driving pulse: square wave bass + higher harmonic
+            const baseFreq = 110;
+            [[1, 'square', 0.022], [2, 'sawtooth', 0.012], [3, 'square', 0.007]].forEach(([mult, type, vol]) => {
+                const osc  = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.value = baseFreq * mult;
+                gain.gain.setValueAtTime(0, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(vol, audioCtx.currentTime + 1.2);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start();
+                musicNodes.push({ osc, gain });
+            });
+            // Rhythmic accent pulse every ~500ms
+            const rhythmId = setInterval(() => {
+                if (musicState !== 'intense') { clearInterval(rhythmId); return; }
+                playSound(55, 0.08, 'square', 0.025);
+            }, 500);
+        }
+
+        // Called from waveComplete and enemy spawning
+        function setMusicForState(state) {
+            if (state === 'calm')   { clearTimeout(musicFadeTimer); musicFadeTimer = setTimeout(startCalmMusic,  400); }
+            if (state === 'intense') { clearTimeout(musicFadeTimer); musicFadeTimer = setTimeout(startIntenseMusic, 200); }
+            if (state === 'stop')   { clearTimeout(musicFadeTimer); stopMusic(); }
+        }
+
+        // =====================================================================
+        // ACHIEVEMENT SYSTEM
+        // =====================================================================
+        function checkAchievements() {
+            for (const ach of ACHIEVEMENTS) {
+                if (!earnedAchievements.has(ach.id) && ach.check()) {
+                    earnedAchievements.add(ach.id);
+                    saveAchievements();
+                    showAchievementToast(ach);
+                }
+            }
+        }
+
+        function showAchievementToast(ach) {
+            playSound(880, 0.08, 'sine', 0.1);
+            setTimeout(() => playSound(1100, 0.12, 'sine', 0.08), 100);
+            const container = document.getElementById('achievement-toasts');
+            if (!container) return;
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                background:linear-gradient(135deg,rgba(241,196,15,0.22),rgba(255,255,255,0.08));
+                border:1px solid rgba(241,196,15,0.55);border-radius:10px;
+                padding:10px 16px;display:flex;align-items:center;gap:10px;
+                box-shadow:0 4px 18px rgba(0,0,0,0.5);
+                animation:achSlideIn 0.35s ease-out;
+                max-width:280px;
+            `;
+            toast.innerHTML = `
+                <span style="font-size:26px;">${ach.icon}</span>
+                <div>
+                    <div style="color:#f1c40f;font-size:11px;font-weight:900;letter-spacing:1px;">ACHIEVEMENT UNLOCKED</div>
+                    <div style="color:#fff;font-size:13px;font-weight:800;margin:1px 0;">${ach.name}</div>
+                    <div style="color:rgba(255,255,255,0.55);font-size:11px;">${ach.desc}</div>
+                </div>
+            `;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.transition = 'opacity 0.5s, transform 0.5s';
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(40px)';
+                setTimeout(() => toast.remove(), 500);
+            }, 3500);
+        }
+
+        // Inject achievement slide-in keyframe
+        const achStyle = document.createElement('style');
+        achStyle.textContent = `@keyframes achSlideIn { from { opacity:0; transform:translateX(40px); } to { opacity:1; transform:translateX(0); } }`;
+        document.head.appendChild(achStyle);
+
+        // Tracking vars for achievements
+        window._headshotsThisRun    = 0;
+        window._bossesKilled        = 0;
+        window._wavesWithoutDamage  = 0;
+        window._damageThisWave      = false;
+
+        // (PLAYER_SKINS / WEAPON_SKINS moved above buildStartScreenUI call)
+
+        function applySkinToPlayer() {
+            const skin = PLAYER_SKINS.find(s => s.id === selectedSkin) || PLAYER_SKINS[0];
+            player.traverse(child => {
+                if (!child.isMesh || !child.material) return;
+                const col = child.material.color?.getHex();
+                // Torso + arms use the main skin color
+                if (col === 0x2196f3 || col === player.userData._skinColor) {
+                    child.material.color.setHex(skin.color);
+                }
+                // Head
+                if (col === 0xffdbac || col === player.userData._headColor) {
+                    child.material.color.setHex(skin.head);
+                }
+                // Pants/legs
+                if (col === 0x2c3e50 || col === player.userData._pantsColor) {
+                    child.material.color.setHex(skin.pants);
+                }
+            });
+            player.userData._skinColor  = skin.color;
+            player.userData._headColor  = skin.head;
+            player.userData._pantsColor = skin.pants;
+        }
+
+        function applyWeaponSkin() {
+            const ws = WEAPON_SKINS.find(s => s.id === selectedWepSkin) || WEAPON_SKINS[0];
+            // Apply to held knife
+            player.userData.heldKnife.traverse(c => {
+                if (!c.isMesh) return;
+                const h = c.material.color?.getHex();
+                if (h === 0xc0c0c0 || h === player.userData._wsBlade) {
+                    c.material.color.setHex(ws.bladeColor);
+                    c.material.emissive?.setHex(ws.emissive);
+                    c.material.emissiveIntensity = ws.glow ? 0.6 : 0;
+                }
+                if (h === 0x3d2817 || h === player.userData._wsHandle) {
+                    c.material.color.setHex(ws.handleColor);
+                }
+            });
+            player.userData._wsBlade  = ws.bladeColor;
+            player.userData._wsHandle = ws.handleColor;
+            // Store for thrown knife creation
+            player.userData.activeWepSkin = ws;
+        }
+
+        function buildSkinUI() {
+            const container = document.getElementById('skin-btns');
+            if (!container) return;
+            container.innerHTML = '';
+            PLAYER_SKINS.forEach(skin => {
+                const btn = document.createElement('button');
+                const isActive = selectedSkin === skin.id;
+                btn.style.cssText = `width:36px;height:36px;border-radius:50%;border:3px solid ${isActive ? '#fff' : 'rgba(255,255,255,0.2)'};background:#${skin.color.toString(16).padStart(6,'0')};cursor:pointer;transition:all 0.15s;box-shadow:${isActive ? '0 0 12px rgba(255,255,255,0.6)' : 'none'};`;
+                btn.title = skin.label;
+                btn.addEventListener('click', () => {
+                    selectedSkin = skin.id;
+                    try { localStorage.setItem('capybara_skin', skin.id); } catch(e){}
+                    buildSkinUI();
+                });
+                container.appendChild(btn);
+            });
+        }
+
+        function buildWeaponSkinUI() {
+            const container = document.getElementById('weapon-skin-btns');
+            if (!container) return;
+            container.innerHTML = '';
+            WEAPON_SKINS.forEach(ws => {
+                const btn = document.createElement('button');
+                const isActive = selectedWepSkin === ws.id;
+                btn.style.cssText = `padding:5px 10px;font-size:11px;font-weight:700;border-radius:8px;border:2px solid ${isActive ? '#f1c40f' : 'rgba(255,255,255,0.2)'};background:${isActive ? 'rgba(241,196,15,0.2)' : 'rgba(0,0,0,0.3)'};color:${isActive ? '#f1c40f' : 'rgba(255,255,255,0.7)'};cursor:pointer;transition:all 0.15s;`;
+                btn.textContent = ws.label;
+                btn.addEventListener('click', () => {
+                    selectedWepSkin = ws.id;
+                    try { localStorage.setItem('capybara_wepskin', ws.id); } catch(e){}
+                    buildWeaponSkinUI();
+                });
+                container.appendChild(btn);
+            });
+        }
+
+        // =====================================================================
+        // DAMAGE NUMBERS
+        // =====================================================================
+        function spawnDamageNumber(worldPos, damage, isHeadshot) {
+            const pos = worldPos.clone();
+            pos.project(camera);
+            if (pos.z > 1) return; // behind camera
+            const x = (pos.x *  0.5 + 0.5) * window.innerWidth;
+            const y = (-pos.y * 0.5 + 0.5) * window.innerHeight;
+            const el = document.createElement('div');
+            el.style.cssText = `position:absolute;left:${x}px;top:${y}px;transform:translate(-50%,-50%);
+                font-size:${isHeadshot ? 26 : 18}px;font-weight:900;
+                color:${isHeadshot ? '#ff3333' : '#fff'};
+                text-shadow:1px 1px 4px rgba(0,0,0,0.9),0 0 8px ${isHeadshot ? '#ff0000' : '#000'};
+                pointer-events:none;z-index:300;font-family:'Arial Black',sans-serif;
+                transition:top 0.6s ease-out,opacity 0.6s ease-in;`;
+            el.textContent = isHeadshot ? `💀 ${damage}` : `-${damage}`;
+            document.body.appendChild(el);
+            requestAnimationFrame(() => {
+                el.style.top = (y - 55) + 'px';
+                el.style.opacity = '0';
+            });
+            setTimeout(() => el.remove(), 650);
+        }
+
+        // =====================================================================
+        // SCREEN SHAKE — moves the camera, never touches DOM (avoids stacking-context bug)
+        // =====================================================================
+        let shakeIntensity = 0;
+        const shakeDecay   = 0.82;
+        let   _shakeCameraOffset = new THREE.Vector3();
+
+        function triggerScreenShake(intensity) {
+            shakeIntensity = Math.max(shakeIntensity, intensity * 0.012);
+        }
+
+        function updateScreenShake() {
+            // Remove last frame's offset
+            camera.position.sub(_shakeCameraOffset);
+
+            if (shakeIntensity < 0.0003) {
+                shakeIntensity = 0;
+                _shakeCameraOffset.set(0, 0, 0);
+                return;
+            }
+            _shakeCameraOffset.set(
+                (Math.random() - 0.5) * shakeIntensity,
+                (Math.random() - 0.5) * shakeIntensity,
+                0
+            );
+            camera.position.add(_shakeCameraOffset);
+            shakeIntensity *= shakeDecay;
+        }
+
+        // =====================================================================
+        // FLASHLIGHT + MOON SHADOW LIGHT  (scene.add calls happen after scene is created below)
+        // =====================================================================
+        let flashlight = null;
+        let moonLight  = null;
+
+        function updateFlashlightAndMoon(isDaytime, nightProgress) {
+            if (!gameStarted || !flashlight) return;
+            const nightStrength = Math.max(0, nightProgress);
+            if (!isDaytime && nightStrength > 0.3) {
+                const camPos = new THREE.Vector3();
+                camera.getWorldPosition(camPos);
+                const camDir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.getWorldQuaternion(new THREE.Quaternion()));
+                flashlight.position.copy(camPos);
+                flashlight.target.position.copy(camPos).addScaledVector(camDir, 10);
+                flashlight.target.updateMatrixWorld();
+                flashlight.intensity = Math.min(1.8, (nightStrength - 0.3) * 2.5);
+            } else {
+                flashlight.intensity = 0;
+            }
+            if (!isDaytime) {
+                moonLight.position.copy(moonMesh.position);
+                moonLight.intensity = nightStrength * 0.4;
+            } else {
+                moonLight.intensity = 0;
+            }
+        }
+
         // =====================================================================
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x87CEEB);
         scene.fog = new THREE.Fog(0x87CEEB, 50, 150);
+
+        // Now scene exists — create flashlight and moon light
+        flashlight = new THREE.SpotLight(0xffffff, 0, 30, Math.PI / 6, 0.4, 1.5);
+        flashlight.castShadow = false;
+        scene.add(flashlight);
+        scene.add(flashlight.target);
+
+        moonLight = new THREE.DirectionalLight(0x8899cc, 0);
+        moonLight.castShadow = true;
+        moonLight.shadow.mapSize.width  = 1024;
+        moonLight.shadow.mapSize.height = 1024;
+        moonLight.shadow.camera.far    = 150;
+        moonLight.shadow.camera.left   = -80;
+        moonLight.shadow.camera.right  =  80;
+        moonLight.shadow.camera.top    =  80;
+        moonLight.shadow.camera.bottom = -80;
+        scene.add(moonLight);
         
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -745,6 +1908,11 @@
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         document.body.appendChild(renderer.domElement);
+        // Pin canvas behind all UI — prevents transform stacking-context from covering HUD
+        renderer.domElement.style.position = 'absolute';
+        renderer.domElement.style.top      = '0';
+        renderer.domElement.style.left     = '0';
+        renderer.domElement.style.zIndex   = '0';
 
         let dayNightTime = 180;
         const dayNightCycleSpeed = 360 / (180 * 60);
@@ -824,21 +1992,32 @@
             moonMesh.position.y = -sunMesh.position.y;
             moonMesh.position.z = -sunMesh.position.z;
             sun.position.copy(sunMesh.position);
+            const b = BIOME_DEFS[currentBiome];
+            const wDef = WEATHER_DEFS[currentWeather];
+            // Fog range modified by weather
+            const effectiveFogFar = b.fogFar * wDef.fogMult;
+            scene.fog.near = b.fogNear * wDef.fogMult;
+            scene.fog.far  = effectiveFogFar;
             const isDaytime = sunHeight > 0;
             const dayProgress = Math.max(0, sunHeight);
             const nightProgress = Math.max(0, -sunHeight);
             if(isDaytime) {
-                const skyColor = new THREE.Color(0x87CEEB).lerp(new THREE.Color(0xff9966), (1 - dayProgress) * 0.5);
-                scene.background = skyColor; scene.fog.color = skyColor;
+                const skyDay   = new THREE.Color(b.skyDay);
+                const skyDawn  = new THREE.Color(b.dawnTint);
+                const skyColor = skyDay.clone().lerp(skyDawn, (1 - dayProgress) * 0.5);
+                scene.background = skyColor; scene.fog.color.copy(skyColor);
                 ambientLight.intensity = 0.4 + dayProgress * 0.3;
                 sun.intensity = 0.8 + dayProgress * 0.4;
                 hemiLight.intensity = 0.2 + dayProgress * 0.2;
                 stars.forEach(s => s.visible = false);
                 moonMesh.visible = false; sunMesh.visible = true;
-                clouds.forEach(c => c.material.opacity = 0.5 + dayProgress * 0.3);
+                const co = wDef.cloudOpacity;
+                clouds.forEach(c => c.material.opacity = Math.min(co, 0.5 + dayProgress * 0.3));
             } else {
-                const nightSky = new THREE.Color(0x0a0a1a).lerp(new THREE.Color(0x87CEEB), (1 - nightProgress));
-                scene.background = nightSky; scene.fog.color = nightSky;
+                const skyNight = new THREE.Color(b.skyNight);
+                const skyDay2  = new THREE.Color(b.skyDay);
+                const nightSky = skyNight.clone().lerp(skyDay2, (1 - nightProgress));
+                scene.background = nightSky; scene.fog.color.copy(nightSky);
                 ambientLight.intensity = 0.15 + (1 - nightProgress) * 0.3;
                 sun.intensity = 0.3 + (1 - nightProgress) * 0.5;
                 hemiLight.intensity = 0.05 + (1 - nightProgress) * 0.2;
@@ -846,6 +2025,7 @@
                 moonMesh.visible = true; sunMesh.visible = false;
                 clouds.forEach(c => c.material.opacity = 0.1 + (1 - nightProgress) * 0.3);
             }
+            updateFlashlightAndMoon(isDaytime, nightProgress);
         }
         
         function animateClouds() {
@@ -859,12 +2039,128 @@
             });
         }
 
+        // =====================================================================
+        // BIOME SYSTEM
+        // =====================================================================
+        const BIOME_DEFS = {
+            forest:  { name:'Forest',    icon:'🌲', floorColor:0x4caf50, floorRough:0.85, skyDay:0x87CEEB, skyNight:0x0a0a1a, dawnTint:0xff9966, fogNear:50,  fogFar:150, hemiGround:0x4a7c59, rockChance:0.30, waterChance:0.15, waterColor:0x2255cc, waterLabel:'Puddles',  iceSlide:false },
+            desert:  { name:'Desert',    icon:'🏜️', floorColor:0xd4a843, floorRough:0.95, skyDay:0xecc97a, skyNight:0x0d0a06, dawnTint:0xff7700, fogNear:70,  fogFar:200, hemiGround:0xc4982d, rockChance:0.55, waterChance:0.00, waterColor:0x0,        waterLabel:'',         iceSlide:false },
+            snow:    { name:'Snowfield', icon:'❄️', floorColor:0xe8eff5, floorRough:0.55, skyDay:0xb8d4e8, skyNight:0x08101a, dawnTint:0xffccaa, fogNear:22,  fogFar:85,  hemiGround:0x8aaabb, rockChance:0.25, waterChance:0.22, waterColor:0xaaccdd, waterLabel:'Ice',      iceSlide:true  }
+        };
+        const BIOME_SEQUENCE = ['forest','desert','snow'];
+        let currentBiome = 'forest';
+        const waterZonesList = []; // { x, z, r, ice }
+
+        function getBiomeForWave(wave) {
+            return BIOME_SEQUENCE[Math.floor((wave - 1) / 10) % 3];
+        }
+
+        function applyBiome(name) {
+            const b = BIOME_DEFS[name];
+            currentBiome = name;
+            scene.fog.near = b.fogNear;
+            scene.fog.far  = b.fogFar;
+            hemiLight.groundColor.set(b.hemiGround);
+            // Update existing chunk floors
+            terrainChunks.forEach(chunk => {
+                if(chunk.floor) { chunk.floor.material.color.set(b.floorColor); chunk.floor.material.roughness = b.floorRough; }
+            });
+            document.getElementById('biome-label').innerText = `${b.icon} ${b.name}`;
+        }
+
+        // =====================================================================
+        // WEATHER SYSTEM
+        // =====================================================================
+        const WEATHER_DEFS = {
+            clear:  { label:'☀️ Clear',   fogMult:1.0, overlayColor:'',                       overlayOpacity:0,    cloudOpacity:0.6, darkens:false },
+            fog:    { label:'🌫️ Fog',     fogMult:0.3, overlayColor:'rgba(180,180,200,0.12)', overlayOpacity:0.7,  cloudOpacity:0.9, darkens:false },
+            rain:   { label:'🌧️ Rain',    fogMult:0.55, overlayColor:'rgba(30,50,80,0.18)',    overlayOpacity:0.55, cloudOpacity:0.95, darkens:false },
+            storm:  { label:'⛈️ Storm',   fogMult:0.4, overlayColor:'rgba(10,10,30,0.35)',     overlayOpacity:0.85, cloudOpacity:1.0,  darkens:true  }
+        };
+        const WEATHER_POOL = ['clear','clear','clear','fog','rain','rain','storm'];
+        let currentWeather = 'clear';
+        let lastLightningTime = 0;
+        let onIce = false;
+
+        function pickWeather() {
+            return WEATHER_POOL[Math.floor(Math.random() * WEATHER_POOL.length)];
+        }
+
+        function applyWeather(name) {
+            currentWeather = name;
+            const w = WEATHER_DEFS[name];
+            const overlay = document.getElementById('weather-overlay');
+            overlay.style.background = w.overlayColor;
+            overlay.style.opacity = w.overlayOpacity;
+            document.getElementById('weather-label').innerText = w.label;
+            rainMesh.visible = (name === 'rain' || name === 'storm');
+        }
+
+        // Rain particle system (InstancedMesh for performance)
+        const RAIN_COUNT = 400;
+        const rainGeom = new THREE.BoxGeometry(0.03, 0.55, 0.03);
+        const rainMat  = new THREE.MeshBasicMaterial({ color: 0x88aacc, transparent: true, opacity: 0.38 });
+        const rainMesh = new THREE.InstancedMesh(rainGeom, rainMat, RAIN_COUNT);
+        rainMesh.visible = false;
+        scene.add(rainMesh);
+        const _rainPos = [];
+        for(let i = 0; i < RAIN_COUNT; i++) _rainPos.push({ x:(Math.random()-0.5)*80, y:Math.random()*32, z:(Math.random()-0.5)*80 });
+        const _rainMat4 = new THREE.Matrix4();
+
+        function updateRain() {
+            if(!rainMesh.visible) return;
+            const px = player.position.x, pz = player.position.z;
+            const isStorm = currentWeather === 'storm';
+            const fallSpeed = isStorm ? 1.1 : 0.65;
+            const windX = isStorm ? 0.04 : 0;
+            for(let i = 0; i < RAIN_COUNT; i++) {
+                const p = _rainPos[i];
+                p.y -= fallSpeed;
+                p.x += windX;
+                if(p.y < -2 || Math.abs(p.x - px) > 45 || Math.abs(p.z - pz) > 45) {
+                    p.y = 28 + Math.random() * 6;
+                    p.x = px + (Math.random()-0.5) * 78;
+                    p.z = pz + (Math.random()-0.5) * 78;
+                }
+                _rainMat4.makeTranslation(p.x, p.y, p.z);
+                rainMesh.setMatrixAt(i, _rainMat4);
+            }
+            rainMesh.instanceMatrix.needsUpdate = true;
+        }
+
+        function updateStormLightning() {
+            if(currentWeather !== 'storm') return;
+            const now = Date.now();
+            if(now - lastLightningTime > 3500 + Math.random() * 5000) {
+                lastLightningTime = now;
+                const savedIntensity = ambientLight.intensity;
+                ambientLight.intensity = 3.5;
+                playSound(55, 0.6, 'sawtooth', 0.28);
+                setTimeout(() => { ambientLight.intensity = savedIntensity; }, 80);
+                setTimeout(() => { ambientLight.intensity = 3.0; }, 140);
+                setTimeout(() => { ambientLight.intensity = savedIntensity; }, 220);
+            }
+        }
+
+        function showBiomeWeatherBanner(biomeChanged, oldBiome, newBiome, weather) {
+            const el = document.createElement('div');
+            el.style.cssText = `position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:300;text-align:center;pointer-events:none;`;
+            let html = '';
+            if(biomeChanged) {
+                const b = BIOME_DEFS[newBiome];
+                html += `<div style="color:#fff;font-size:42px;font-family:'Arial Black',sans-serif;text-shadow:2px 2px 12px rgba(0,0,0,0.9);">${b.icon} ${b.name.toUpperCase()}</div>`;
+            }
+            const w = WEATHER_DEFS[weather];
+            html += `<div style="color:rgba(255,255,255,0.8);font-size:22px;margin-top:6px;text-shadow:1px 1px 6px rgba(0,0,0,0.8);">${w.label}</div>`;
+            el.innerHTML = html;
+            document.body.appendChild(el);
+            setTimeout(() => { el.style.transition='opacity 0.6s'; el.style.opacity='0'; setTimeout(()=>el.remove(), 700); }, 2200);
+        }
+
         let collidables = [];
-        const rampColliders = [];
         const enemies = [];
         const bullets = [];
         const trees = [];
-        const gridSize = 4;
         
         const chunkSize = 50;
         const renderDistance = 150;
@@ -880,48 +2176,391 @@
         function createTerrainChunk(chunkX, chunkZ) {
             const chunkKey = getChunkKey(chunkX, chunkZ);
             if(terrainChunks.has(chunkKey)) return;
-            const chunk = { key: chunkKey, x: chunkX, z: chunkZ, trees: [], floor: null };
+            const b = BIOME_DEFS[currentBiome];
+            const chunk = { key: chunkKey, x: chunkX, z: chunkZ, trees: [], obstacles: [], waterZones: [], floor: null };
+
+            // Floor
             const floorSegment = new THREE.Mesh(
                 new THREE.PlaneGeometry(chunkSize, chunkSize),
-                new THREE.MeshStandardMaterial({ color: 0x4caf50, roughness: 0.8, metalness: 0.2 })
+                new THREE.MeshStandardMaterial({ color: b.floorColor, roughness: b.floorRough, metalness: 0.1 })
             );
             floorSegment.rotation.x = -Math.PI / 2;
             floorSegment.position.set(chunkX * chunkSize + chunkSize/2, 0, chunkZ * chunkSize + chunkSize/2);
             floorSegment.receiveShadow = true;
             scene.add(floorSegment);
             chunk.floor = floorSegment;
+
             const seed = chunkX * 1000 + chunkZ;
-            const treesPerChunk = 3 + (Math.abs(seed) % 4);
-            for(let i = 0; i < treesPerChunk; i++) {
-                const pr1 = Math.abs(Math.sin(seed + i * 12.9898) * 43758.5453) % 1;
-                const pr2 = Math.abs(Math.sin(seed + i * 78.233) * 43758.5453) % 1;
-                const treeX = chunkX * chunkSize + pr1 * chunkSize;
-                const treeZ = chunkZ * chunkSize + pr2 * chunkSize;
-                if(Math.sqrt(treeX * treeX + treeZ * treeZ) < SPAWN_CLEAR_RADIUS) continue;
-                chunk.trees.push(createTreeAt(treeX, treeZ));
+            const pr = (n) => Math.abs(Math.sin(seed * 127.1 + n * 311.7) * 43758.5453) % 1;
+
+            // Trees / cacti / snow-trees
+            const treeCount = 3 + (Math.abs(seed) % 4);
+            for(let i = 0; i < treeCount; i++) {
+                const tx = chunkX * chunkSize + pr(i * 2) * chunkSize;
+                const tz = chunkZ * chunkSize + pr(i * 2 + 1) * chunkSize;
+                if(Math.sqrt(tx*tx + tz*tz) < SPAWN_CLEAR_RADIUS) continue;
+                chunk.trees.push(createTreeAt(tx, tz));
             }
+
+            // Rocks / boulders (biome-driven density + include tall cliff rocks)
+            if(pr(50) < b.rockChance) {
+                const rockCount = 1 + Math.floor(pr(51) * 3);
+                for(let i = 0; i < rockCount; i++) {
+                    const rx = chunkX * chunkSize + pr(60 + i*3) * chunkSize;
+                    const rz = chunkZ * chunkSize + pr(61 + i*3) * chunkSize;
+                    if(Math.sqrt(rx*rx + rz*rz) < SPAWN_CLEAR_RADIUS + 2) continue;
+                    const isCliff = (pr(62 + i*3) < 0.25); // 25% chance of tall cliff rock
+                    createRockAt(rx, rz, isCliff, chunk);
+                }
+            }
+
+            // Water / ice patches
+            if(b.waterChance > 0 && pr(80) < b.waterChance) {
+                const wx = chunkX * chunkSize + pr(81) * chunkSize;
+                const wz = chunkZ * chunkSize + pr(82) * chunkSize;
+                if(Math.sqrt(wx*wx + wz*wz) >= SPAWN_CLEAR_RADIUS + 3) {
+                    createWaterPatch(wx, wz, b, chunk);
+                }
+            }
+
             terrainChunks.set(chunkKey, chunk);
         }
-        
+
         function createTreeAt(x, z) {
             const tree = new THREE.Group();
-            const trunk = new THREE.Mesh(
-                new THREE.BoxGeometry(0.8, 3, 0.8),
-                new THREE.MeshStandardMaterial({ color: 0x5d4037, roughness: 0.9, metalness: 0.1 })
-            );
-            trunk.position.y = 1.5; trunk.castShadow = true; trunk.receiveShadow = true;
-            const leaves = new THREE.Mesh(
-                new THREE.BoxGeometry(2.5, 2.5, 2.5),
-                new THREE.MeshStandardMaterial({ color: 0x2e7d32, roughness: 0.8, metalness: 0.0 })
-            );
-            leaves.position.y = 3.5; leaves.castShadow = true; leaves.receiveShadow = true;
-            tree.add(trunk, leaves);
+            if(currentBiome === 'desert') {
+                // Cactus: tall green cylinder body + arm stubs
+                const bodyH = 2.8 + Math.random() * 1.4;
+                const body = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.28, 0.35, bodyH, 7),
+                    new THREE.MeshStandardMaterial({ color: 0x2e7d32, roughness: 0.8 })
+                );
+                body.position.y = bodyH / 2;
+                body.castShadow = true;
+                tree.add(body);
+                // Arms
+                const armH = 0.9; const armY = bodyH * 0.55;
+                [-1, 1].forEach(side => {
+                    if(Math.random() > 0.35) {
+                        const arm = new THREE.Mesh(
+                            new THREE.CylinderGeometry(0.16, 0.2, armH, 6),
+                            new THREE.MeshStandardMaterial({ color: 0x2e7d32, roughness: 0.8 })
+                        );
+                        arm.rotation.z = side * Math.PI / 2.5;
+                        arm.position.set(side * 0.55, armY, 0);
+                        arm.castShadow = true;
+                        tree.add(arm);
+                    }
+                });
+                // Add trunk as collidable
+                const col = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, bodyH, 6), body.material);
+                col.position.y = bodyH / 2;
+                col.userData.isTree = true; col.visible = false;
+                tree.add(col);
+                collidables.push(col);
+            } else if(currentBiome === 'snow') {
+                // Snow-capped pine
+                const trunk = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.7, 2.8, 0.7),
+                    new THREE.MeshStandardMaterial({ color: 0x4a3020, roughness: 0.9 })
+                );
+                trunk.position.y = 1.4; trunk.castShadow = true;
+                tree.add(trunk);
+                // Layered snow foliage
+                [[3.0, 2.6, 0.75], [2.2, 2.0, 0.55], [1.4, 1.4, 0.35]].forEach(([w, h, yOff]) => {
+                    const layer = new THREE.Mesh(
+                        new THREE.ConeGeometry(w * 0.5, h, 7),
+                        new THREE.MeshStandardMaterial({ color: 0xeef4ff, roughness: 0.6 })
+                    );
+                    layer.position.y = 2.8 + yOff * 3.5; layer.castShadow = true;
+                    tree.add(layer);
+                    // Green under-layer
+                    const green = new THREE.Mesh(
+                        new THREE.ConeGeometry(w * 0.42, h * 0.85, 7),
+                        new THREE.MeshStandardMaterial({ color: 0x1b5e20, roughness: 0.8 })
+                    );
+                    green.position.y = 2.8 + yOff * 3.5 - 0.15;
+                    tree.add(green);
+                });
+                trunk.userData.isTree = true;
+                collidables.push(trunk);
+            } else {
+                // Forest: original tree
+                const trunk = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.8, 3, 0.8),
+                    new THREE.MeshStandardMaterial({ color: 0x5d4037, roughness: 0.9, metalness: 0.1 })
+                );
+                trunk.position.y = 1.5; trunk.castShadow = true; trunk.receiveShadow = true;
+                const leaves = new THREE.Mesh(
+                    new THREE.BoxGeometry(2.5, 2.5, 2.5),
+                    new THREE.MeshStandardMaterial({ color: 0x2e7d32, roughness: 0.8 })
+                );
+                leaves.position.y = 3.5; leaves.castShadow = true;
+                tree.add(trunk, leaves);
+                trunk.userData.isTree = true;
+                collidables.push(trunk);
+            }
             tree.position.set(x, 0, z);
             scene.add(tree);
-            trunk.userData.isTree = true;
-            collidables.push(trunk);
             trees.push(tree);
             return tree;
+        }
+
+        function createRockAt(x, z, isCliff, chunk) {
+            const rockColors = [0x888888, 0x777766, 0x997755, 0x666677];
+            const col = rockColors[Math.floor(Math.random() * rockColors.length)];
+            const mat = new THREE.MeshStandardMaterial({ color: col, roughness: 0.9, metalness: 0.15 });
+
+            const group = new THREE.Group();
+            group.position.set(x, 0, z);
+
+            if(isCliff) {
+                // Tall cliff pillar — 2-3 stacked irregular boxes
+                const layers = 2 + Math.floor(Math.random() * 2);
+                let yOff = 0;
+                for(let l = 0; l < layers; l++) {
+                    const w = 1.4 - l * 0.25 + Math.random() * 0.4;
+                    const h = 1.6 + Math.random() * 1.2;
+                    const rock = new THREE.Mesh(new THREE.BoxGeometry(w, h, w + Math.random() * 0.5), mat);
+                    rock.position.set(Math.random() * 0.3 - 0.15, yOff + h/2, Math.random() * 0.3 - 0.15);
+                    rock.rotation.y = Math.random() * 0.5;
+                    rock.castShadow = true; rock.receiveShadow = true;
+                    group.add(rock);
+                    collidables.push(rock);
+                    chunk.obstacles.push(rock);
+                    yOff += h;
+                }
+            } else {
+                // Scattered smaller boulder(s)
+                const count = 1 + Math.floor(Math.random() * 3);
+                for(let r = 0; r < count; r++) {
+                    const sz = 0.5 + Math.random() * 1.1;
+                    const rock = new THREE.Mesh(new THREE.BoxGeometry(sz, sz * 0.65, sz * 0.85), mat);
+                    rock.position.set(Math.random() * 2 - 1, sz * 0.3, Math.random() * 2 - 1);
+                    rock.rotation.set(Math.random()*0.4, Math.random()*Math.PI, Math.random()*0.3);
+                    rock.castShadow = true; rock.receiveShadow = true;
+                    group.add(rock);
+                    collidables.push(rock);
+                    chunk.obstacles.push(rock);
+                }
+            }
+            scene.add(group);
+            chunk.obstacles.push(group); // track group for scene removal
+        }
+
+        // All active water groups for per-frame animation
+        // ---- WATER SHADER ----
+        const waterVertexShader = `
+            uniform float uTime;
+            uniform float uRadius;
+            varying vec2  vUv;
+            varying float vDist;   // 0 = centre, 1 = edge
+            varying float vWave;   // local wave height for foam
+
+            void main() {
+                vUv = uv;
+                vec3 pos = position;
+
+                // Distance from centre (normalised 0-1)
+                float d = length(pos.xz) / uRadius;
+                vDist = d;
+
+                // Gerstner-like wave: several sine waves in XZ superimposed
+                float w = 0.0;
+                w += sin(pos.x * 1.8 + uTime * 1.6) * 0.055;
+                w += sin(pos.z * 2.1 - uTime * 1.2) * 0.045;
+                w += sin((pos.x + pos.z) * 1.3 + uTime * 0.9) * 0.035;
+                w += sin((pos.x - pos.z) * 2.5 - uTime * 2.1) * 0.020;
+                // Suppress waves at the very edge so they don't poke above ground
+                w *= smoothstep(1.0, 0.6, d);
+                pos.y += w;
+                vWave = w;
+
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+            }
+        `;
+
+        const waterFragmentShader = `
+            uniform float uTime;
+            uniform float uRadius;
+            varying vec2  vUv;
+            varying float vDist;
+            varying float vWave;
+
+            void main() {
+                // Scrolling caustic pattern: two overlapping sin grids
+                vec2 uv = vUv * 4.0;
+                float c1 = sin(uv.x * 3.0 + uTime * 1.1) * sin(uv.y * 2.8 - uTime * 0.8);
+                float c2 = sin((uv.x + uv.y) * 2.5 - uTime * 1.4) * sin((uv.x - uv.y) * 2.2 + uTime * 1.0);
+                float caustic = clamp((c1 + c2) * 0.5 + 0.5, 0.0, 1.0);
+
+                // Depth colour: dark navy at centre -> teal at edge
+                vec3 deepCol  = vec3(0.03, 0.18, 0.42);
+                vec3 shallowCol = vec3(0.12, 0.55, 0.72);
+                vec3 baseCol  = mix(deepCol, shallowCol, vDist * vDist);
+
+                // Add caustic highlight
+                baseCol += caustic * 0.12 * (1.0 - vDist);
+
+                // Wave crest sparkle
+                float crest = smoothstep(0.035, 0.06, vWave);
+                baseCol += crest * vec3(0.6, 0.85, 1.0) * 0.55;
+
+                // Fresnel-style fade: transparent at edge, opaque in centre
+                float fresnel = 1.0 - smoothstep(0.55, 1.0, vDist);
+                float alpha = mix(0.55, 0.92, fresnel);
+
+                // Foam ring near edge
+                float foam = smoothstep(0.78, 0.85, vDist) * (0.5 + 0.5 * sin(uTime * 3.0 + vDist * 30.0));
+                baseCol = mix(baseCol, vec3(0.75, 0.92, 1.0), foam * 0.7);
+                alpha = max(alpha, foam * 0.6);
+
+                gl_FragColor = vec4(baseCol, alpha);
+            }
+        `;
+
+        const iceVertexShader = `
+            uniform float uTime;
+            varying vec2  vUv;
+            varying float vDist;
+
+            void main() {
+                vUv = uv;
+                vDist = length(position.xz) / 6.0; // normalised (rough)
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+        `;
+
+        const iceFragmentShader = `
+            uniform float uTime;
+            varying vec2  vUv;
+            varying float vDist;
+
+            // Simple pseudo-random for crack pattern
+            float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+
+            void main() {
+                vec2 uv = vUv;
+
+                // Base: icy blue-white gradient, centre slightly darker (depth)
+                vec3 iceDeep    = vec3(0.55, 0.78, 0.92);
+                vec3 iceShallow = vec3(0.88, 0.95, 1.00);
+                vec3 baseCol = mix(iceDeep, iceShallow, vDist);
+
+                // Iridescent shimmer band scrolling slowly
+                float shimmer = sin((uv.x + uv.y) * 8.0 + uTime * 0.4) * 0.5 + 0.5;
+                vec3 shiftCol = vec3(0.7 + shimmer * 0.3, 0.88 + shimmer * 0.1, 1.0);
+                baseCol = mix(baseCol, shiftCol, shimmer * 0.22);
+
+                // Internal refraction-like noise (fake sub-surface lines)
+                float lines = abs(sin((uv.x * 6.0 + uv.y * 4.0) * 3.14159 + uTime * 0.15));
+                baseCol += smoothstep(0.85, 1.0, lines) * vec3(0.3, 0.5, 0.7) * 0.18;
+
+                // Edge frost
+                float frost = smoothstep(0.72, 1.0, vDist);
+                baseCol = mix(baseCol, vec3(1.0), frost * 0.55);
+
+                float alpha = mix(0.80, 0.95, 1.0 - vDist * 0.6);
+                alpha = mix(alpha, 0.55, frost);
+
+                gl_FragColor = vec4(baseCol, alpha);
+            }
+        `;
+
+        // Shared uniforms pool — each water patch gets its own uTime ref
+        const activeWaterMeshes = []; // { mesh, uniforms }
+
+        function createWaterPatch(x, z, biomeDef, chunk) {
+            const r = 2.8 + Math.random() * 3.2;
+            const isIce = biomeDef.iceSlide;
+            const group = new THREE.Group();
+            group.position.set(x, 0, z);
+            group.userData.waterRadius = r;
+            group.userData.isIce = isIce;
+
+            const uniforms = {
+                uTime:   { value: 0 },
+                uRadius: { value: r }
+            };
+
+            if(isIce) {
+                // Flat ice — no vertex displacement, pure fragment shader
+                const geom = new THREE.CircleGeometry(r, 48);
+                const mat  = new THREE.ShaderMaterial({
+                    vertexShader:   iceVertexShader,
+                    fragmentShader: iceFragmentShader,
+                    uniforms,
+                    transparent: true,
+                    depthWrite: false,
+                    side: THREE.DoubleSide
+                });
+                const mesh = new THREE.Mesh(geom, mat);
+                mesh.rotation.x = -Math.PI / 2;
+                mesh.position.y = 0.015;
+                group.add(mesh);
+                activeWaterMeshes.push({ mesh, uniforms });
+
+                // Crack lines on top — dark thin planes
+                const crackCount = 5 + Math.floor(Math.random() * 4);
+                for(let c = 0; c < crackCount; c++) {
+                    const angle = (c / crackCount) * Math.PI * 2 + (Math.random() - 0.5) * 0.8;
+                    const len   = r * (0.35 + Math.random() * 0.55);
+                    const crackMat = new THREE.MeshBasicMaterial({
+                        color: 0x4488aa, transparent: true, opacity: 0.45
+                    });
+                    const crack = new THREE.Mesh(
+                        new THREE.BoxGeometry(0.05, 0.02, len), crackMat
+                    );
+                    crack.rotation.y = angle;
+                    crack.position.set(Math.cos(angle) * len * 0.4, 0.02, Math.sin(angle) * len * 0.4);
+                    group.add(crack);
+
+                    // Branching sub-cracks
+                    if(Math.random() > 0.4) {
+                        const subLen = len * (0.2 + Math.random() * 0.35);
+                        const subAngle = angle + (Math.random() - 0.5) * 1.1;
+                        const sub = new THREE.Mesh(
+                            new THREE.BoxGeometry(0.03, 0.02, subLen), crackMat
+                        );
+                        sub.rotation.y = subAngle;
+                        sub.position.set(Math.cos(angle) * len * 0.6, 0.021, Math.sin(angle) * len * 0.6);
+                        group.add(sub);
+                    }
+                }
+
+            } else {
+                // Animated water — subdivided plane for vertex wave displacement
+                const segments = 36;
+                const geom = new THREE.CircleGeometry(r, segments);
+                const mat  = new THREE.ShaderMaterial({
+                    vertexShader:   waterVertexShader,
+                    fragmentShader: waterFragmentShader,
+                    uniforms,
+                    transparent: true,
+                    depthWrite: false,
+                    side: THREE.DoubleSide
+                });
+                const mesh = new THREE.Mesh(geom, mat);
+                mesh.rotation.x = -Math.PI / 2;
+                mesh.position.y = 0.012;
+                group.add(mesh);
+                activeWaterMeshes.push({ mesh, uniforms });
+            }
+
+            scene.add(group);
+            activeWaterMeshes[activeWaterMeshes.length - 1].group = group;
+            chunk.obstacles.push(group);
+            const zone = { x, z, r, ice: isIce };
+            waterZonesList.push(zone);
+            chunk.waterZones.push(zone);
+        }
+
+        function updateWater() {
+            if(activeWaterMeshes.length === 0) return;
+            const t = Date.now() * 0.001;
+            for(const entry of activeWaterMeshes) {
+                entry.uniforms.uTime.value = t;
+            }
         }
         
         function removeTerrainChunk(key) {
@@ -937,6 +2576,22 @@
                 });
                 const ti = trees.indexOf(tree);
                 if(ti > -1) trees.splice(ti, 1);
+            });
+            // Remove rock/cliff obstacles
+            chunk.obstacles.forEach(obj => {
+                scene.remove(obj);
+                if(obj.geometry) { obj.geometry.dispose(); if(obj.material) obj.material.dispose(); }
+                const ci = collidables.indexOf(obj);
+                if(ci > -1) collidables.splice(ci, 1);
+                // Also remove from activeWaterMeshes if it's a water group
+                for(let wi = activeWaterMeshes.length - 1; wi >= 0; wi--) {
+                    if(activeWaterMeshes[wi].group === obj) { activeWaterMeshes.splice(wi, 1); break; }
+                }
+            });
+            // Remove water zones from global list
+            chunk.waterZones.forEach(zone => {
+                const wi = waterZonesList.indexOf(zone);
+                if(wi > -1) waterZonesList.splice(wi, 1);
             });
             terrainChunks.delete(key);
         }
@@ -1092,39 +2747,118 @@
             return e;
         }
 
+        function createArmored() {
+            const e = buildCapybaraMesh(0x7a7a7a, 0x555555, 1.1); // grey metallic
+            // Steel plate on front
+            const plateMat = new THREE.MeshStandardMaterial({ color: 0xaaaaaa, metalness: 0.85, roughness: 0.2 });
+            const plate = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.55, 0.12), plateMat);
+            plate.position.set(0, 0.52, 0.95); e.add(plate);
+            const shoulderL = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.3, 0.2), plateMat);
+            shoulderL.position.set(-0.55, 0.6, 0.5); e.add(shoulderL);
+            const shoulderR = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.3, 0.2), plateMat);
+            shoulderR.position.set(0.55, 0.6, 0.5); e.add(shoulderR);
+            e.userData.enemyType   = 'armored';
+            e.userData.health      = 220; e.userData.maxHealth = 220;
+            e.userData.speed       = 0.033;
+            e.userData.attackRange = 1.4; e.userData.attackCooldown = 1100;
+            e.userData.attackDamage= 28;
+            e.userData.armorAngle  = Math.PI; // front arc (radians half-angle)
+            return e;
+        }
+
+        function createRanged() {
+            const e = buildCapybaraMesh(0x9e6b3a, 0x5c3a1a, 0.95); // sandy brown
+            // Mud pouch on back
+            const pouchMat = new THREE.MeshStandardMaterial({ color: 0x5a3010, roughness: 0.95 });
+            const pouch = new THREE.Mesh(new THREE.SphereGeometry(0.28, 7, 7), pouchMat);
+            pouch.position.set(0, 0.6, -0.75); e.add(pouch);
+            e.userData.enemyType     = 'ranged';
+            e.userData.health        = 70; e.userData.maxHealth = 70;
+            e.userData.speed         = 0.028;
+            e.userData.attackRange   = 1.2; e.userData.attackCooldown = 99999;
+            e.userData.attackDamage  = 0;
+            e.userData.preferredDistance = 14;
+            e.userData.throwRange    = 18;
+            e.userData.throwCooldown = 2200;
+            e.userData.lastThrow     = 0;
+            return e;
+        }
+
+        function createHealer() {
+            const e = buildCapybaraMesh(0x3a8a3a, 0x1e5e1e, 0.9); // bright green
+            // Green cross on back
+            const crossMat = new THREE.MeshStandardMaterial({ color: 0x00ff88, emissive: 0x00aa55, emissiveIntensity: 0.7 });
+            const crossH = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.12, 0.08), crossMat);
+            crossH.position.set(0, 0.75, -0.5); e.add(crossH);
+            const crossV = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.55, 0.08), crossMat);
+            crossV.position.set(0, 0.75, -0.5); e.add(crossV);
+            e.userData.enemyType      = 'healer';
+            e.userData.health         = 90; e.userData.maxHealth = 90;
+            e.userData.speed          = 0.026;
+            e.userData.attackRange    = 1.2; e.userData.attackCooldown = 99999;
+            e.userData.attackDamage   = 0;
+            e.userData.healRange      = 9;
+            e.userData.healAmount     = 4;
+            e.userData.healCooldown   = 2000;
+            e.userData.lastHeal       = 0;
+            e.userData.preferredDistance = 12; // hangs back
+            e.userData.crossH         = crossH;
+            e.userData.crossV         = crossV;
+            return e;
+        }
+
+        function fireRangedThrow(en) {
+            const mudGroup = new THREE.Group();
+            const blob = new THREE.Mesh(
+                new THREE.SphereGeometry(0.16, 7, 7),
+                new THREE.MeshStandardMaterial({ color: 0x5a3010, roughness: 0.95, emissive: 0x200800, emissiveIntensity: 0.3 })
+            );
+            mudGroup.add(blob);
+            const worldPos = new THREE.Vector3();
+            en.getWorldPosition(worldPos);
+            worldPos.y += 0.8;
+            mudGroup.position.copy(worldPos);
+            const dir = new THREE.Vector3().subVectors(player.position, worldPos);
+            dir.y += 0.2;
+            dir.normalize();
+            mudGroup.userData.velocity = dir.multiplyScalar(0.7);
+            mudGroup.userData.gravity  = -0.006;
+            mudGroup.userData.life     = 160;
+            mudGroup.userData.damage   = 12;
+            scene.add(mudGroup);
+            enemyProjectiles.push(mudGroup);
+            playSound(160, 0.1, 'sawtooth', 0.06);
+        }
         function createAlphaBoss() {
-            const e = buildCapybaraMesh(0x1a0a00, 0x3d0000, 2.2); // huge, near-black
-            // Red crown spikes
+            const e = buildCapybaraMesh(0x1a0a00, 0x3d0000, 2.2);
             const spikeMat = new THREE.MeshStandardMaterial({ color: 0xff2200, emissive: 0xaa0000, emissiveIntensity: 0.6 });
             for(let i = -1; i <= 1; i++) {
                 const spike = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.4, 6), spikeMat);
                 spike.position.set(i * 0.28, 1.05, 0); e.add(spike);
             }
-            // Glowing red eyes
             const redEyeMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
             e.children.forEach(c => {
                 if(c.geometry && c.geometry.type === 'SphereGeometry' && Math.abs(c.position.y - 0.75) < 0.1) {
                     c.material = redEyeMat;
                 }
             });
-            e.userData.enemyType = 'boss';
-            e.userData.health = 1500; e.userData.maxHealth = 1500;
-            e.userData.speed = 0.035;
-            e.userData.attackRange = 2.5; e.userData.attackCooldown = 900;
+            e.userData.enemyType    = 'boss';
+            e.userData.health       = 1500; e.userData.maxHealth = 1500;
+            e.userData.speed        = 0.035; e.userData._baseSpeed = 0.035;
+            e.userData.attackRange  = 2.5; e.userData.attackCooldown = 900;
             e.userData.attackDamage = 40;
-            e.userData.spitRange = 25;
+            e.userData.spitRange    = 25;
             e.userData.spitCooldown = 1800;
-            e.userData.lastSpit = 0;
+            e.userData.lastSpit     = 0;
             e.userData.jumpCooldown = 5000; e.userData.lastJump = 0;
-            e.userData.isBoss = true;
+            e.userData.isBoss       = true;
+            e.userData.phase        = 1;
             return e;
         }
 
-        // Pick enemy type based on current wave, returns a configured group
-        function createEnemyForWave() {
-            // Boss spawns on waves 5, 10, 15...
-            if(currentWave % 5 === 0 && currentWave > 0) {
-                // Only one boss per wave — tracked via flag
+        // Pick enemy type based on current wave
+        function createEnemyForWave(forceSwarm) {
+            if(currentWave % 5 === 0 && currentWave > 0 && !forceSwarm) {
                 if(!window._bossSpawnedThisWave) {
                     window._bossSpawnedThisWave = true;
                     return createAlphaBoss();
@@ -1132,10 +2866,21 @@
             }
             const roll = Math.random();
             const w = currentWave;
-            if(w >= 10 && roll < 0.12) return createSpitter();
-            if(w >= 8  && roll < 0.22) return createExploder();
-            if(w >= 4  && roll < 0.30) return createTank();
-            if(w >= 2  && roll < 0.45) return createScout();
+            // Swarm enemies are fast, weak scouts
+            if(forceSwarm) {
+                const e = createScout();
+                e.userData.health = Math.ceil(e.userData.maxHealth * 0.5);
+                e.userData.maxHealth = e.userData.health;
+                e.userData.speed *= 1.55;
+                return e;
+            }
+            if(w >= 14 && roll < 0.10) return createHealer();
+            if(w >= 12 && roll < 0.20) return createRanged();
+            if(w >= 9  && roll < 0.30) return createArmored();
+            if(w >= 10 && roll < 0.38) return createSpitter();
+            if(w >= 8  && roll < 0.46) return createExploder();
+            if(w >= 4  && roll < 0.56) return createTank();
+            if(w >= 2  && roll < 0.68) return createScout();
             return createNormal();
         }
 
@@ -1175,14 +2920,10 @@
             const dist = player.position.distanceTo(en.position);
             const blastRadius = 4.5;
             if(dist < blastRadius && !isPowerUpActive('invincible')) {
-                const dmg = Math.round(60 * (1 - dist / blastRadius));
-                health = Math.max(0, health - dmg);
-                document.getElementById('health-bar').style.width = (health/maxPlayerHealth*100) + '%';
-                document.getElementById('health-bar').style.width = health + '%';
+                const rawDmg = Math.round(60 * (1 - dist / blastRadius));
+                takeDamage(rawDmg);
                 damageSound();
-                if(health <= 0) {
-                    showGameOver(currentWave - 1, killCount);
-                }
+                triggerScreenShake(12);
             }
             // Show explosion ring indicator
             const expEl = document.createElement('div');
@@ -1307,18 +3048,27 @@
         applyAllSkillBonuses();
         updateTerrain();
 
-        function spawnEnemy() {
-            const e = createEnemyForWave();
+        function applyDifficultyToEnemy(e) {
+            const dm = getDifficultyMult();
+            e.userData.health    = Math.floor(e.userData.health    * dm.enemyHPMult);
+            e.userData.maxHealth = Math.floor(e.userData.maxHealth * dm.enemyHPMult);
+            e.userData.speed    *= dm.enemySpeedMult;
+            if(activeMode === 'challenge' && activeChallenge === 'speed') e.userData.speed *= 2.0;
+            if(e.userData.attackDamage) e.userData.attackDamage = Math.ceil(e.userData.attackDamage * dm.enemyDmgMult);
+        }
+
+        function spawnEnemy(forceSwarm) {
+            const e = createEnemyForWave(forceSwarm);
             e.position.set(Math.random()*60-30, 0, Math.random()*60-30);
             scene.add(e);
             const hBar = createHealthBar(false);
             e.userData.healthBarElement = hBar.container;
             e.userData.healthBarFill = hBar.fill;
-            // Scale health/speed with wave (bosses get extra scaling)
             const wm = 1 + (currentWave - 1) * 0.15;
             e.userData.health = Math.floor(e.userData.health * wm);
             e.userData.maxHealth = Math.floor(e.userData.maxHealth * wm);
             e.userData.speed = e.userData.speed + (currentWave - 1) * 0.002;
+            applyDifficultyToEnemy(e);
             enemies.push(e);
         }
         
@@ -1335,73 +3085,22 @@
             e.userData.health = Math.floor(e.userData.health * wm);
             e.userData.maxHealth = Math.floor(e.userData.maxHealth * wm);
             e.userData.speed = e.userData.speed + (currentWave - 1) * 0.002;
+            applyDifficultyToEnemy(e);
             enemies.push(e);
         }
         
         for(let i=0; i<enemiesInWave; i++) spawnEnemy();
-
-        function damageWall(wall, amount) {
-            if (!wall.userData.health) return;
-            wall.userData.health -= amount;
-            hitSound();
-            if (!wall.userData.healthBarElement) {
-                const hBar = createHealthBar(true);
-                wall.userData.healthBarElement = hBar.container;
-                wall.userData.healthBarFill = hBar.fill;
-            }
-            wall.userData.healthBarElement.style.display = 'block';
-            wall.userData.healthBarFill.style.width = (wall.userData.health / wall.userData.maxHealth * 100) + '%';
-            if (wall.userData.health <= 0) {
-                if (wall.userData.healthBarElement) wall.userData.healthBarElement.remove();
-                scene.remove(wall);
-                collidables = collidables.filter(c => c !== wall);
-                hitSound();
-            }
-        }
-
-        function build(type) {
-            if(wood < 10) return;
-            const gx = Math.round(player.position.x / gridSize) * gridSize;
-            const gz = Math.round(player.position.z / gridSize) * gridSize;
-            const angle = player.rotation.y;
-            const snappedAngle = Math.round(angle / (Math.PI/2)) * (Math.PI/2);
-            let normAngle = snappedAngle % (Math.PI * 2);
-            if (normAngle < 0) normAngle += Math.PI * 2;
-            let piece;
-            if(type === 'wall') {
-                piece = new THREE.Mesh(
-                    new THREE.BoxGeometry(gridSize, 3, 0.2),
-                    new THREE.MeshStandardMaterial({color:0x5d4037,side:THREE.DoubleSide,roughness:0.8,metalness:0.2})
-                );
-                const ox = Math.round(-Math.sin(normAngle)) * (gridSize/2);
-                const oz = Math.round(-Math.cos(normAngle)) * (gridSize/2);
-                piece.position.set(gx+ox, 1.5, gz+oz);
-                piece.rotation.y = snappedAngle;
-                piece.userData.type = 'wall'; piece.userData.health = 100; piece.userData.maxHealth = 100;
-                piece.castShadow=true; piece.receiveShadow=true;
-                collidables.push(piece);
-            } else {
-                const rampGroup = new THREE.Group();
-                const rampSurface = new THREE.Mesh(
-                    new THREE.BoxGeometry(gridSize,0.2,gridSize*1.414),
-                    new THREE.MeshStandardMaterial({color:0x8b4513,roughness:0.9,metalness:0.1})
-                );
-                rampSurface.position.y = gridSize/2;
-                rampSurface.rotation.x = -Math.PI/4;
-                rampSurface.castShadow=true; rampSurface.receiveShadow=true;
-                rampGroup.add(rampSurface);
-                rampGroup.position.set(gx,0,gz);
-                rampGroup.rotation.y = snappedAngle + Math.PI;
-                piece = rampGroup;
-                rampColliders.push(rampSurface);
-            }
-            wood -= 10;
-            document.getElementById('mats').innerText = `WOOD: ${wood}`;
-            scene.add(piece);
-            buildSound();
-        }
+        // Music starts when gameplay begins (called from launchGame)
 
         function useWeapon() {
+            if(isMeleeOnly() && (activeSlot === 2 || activeSlot === 3)) {
+                // Flash a message
+                let el = document.getElementById('challenge-block-msg');
+                if(!el) { el = document.createElement('div'); el.id='challenge-block-msg'; el.style.cssText='position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#ffa500;font-size:20px;font-weight:900;text-shadow:2px 2px 6px #000;pointer-events:none;z-index:200;'; document.body.appendChild(el); }
+                el.innerText = '🪓 MELEE ONLY!'; clearTimeout(el._t);
+                el._t = setTimeout(() => { el.innerText=''; }, 900);
+                return;
+            }
             if (activeSlot === 1) shootKnife();
             else if (activeSlot === 3) throwSpear();
             else if (activeSlot === 4) swingAxe();
@@ -1419,9 +3118,10 @@
             player.userData.throwStartTime = now;
             player.userData.attackType = 'knife';
             const knifeGroup = new THREE.Group();
-            const blade = new THREE.Mesh(new THREE.BoxGeometry(0.08,0.4,0.02), new THREE.MeshStandardMaterial({color:0xc0c0c0,metalness:0.8,roughness:0.2}));
+            const ws = player.userData.activeWepSkin || { bladeColor:0xc0c0c0, handleColor:0x3d2817, emissive:0x000000, glow:false };
+            const blade = new THREE.Mesh(new THREE.BoxGeometry(0.08,0.4,0.02), new THREE.MeshStandardMaterial({color:ws.bladeColor,metalness:0.8,roughness:0.2,emissive:new THREE.Color(ws.emissive),emissiveIntensity:ws.glow?0.5:0}));
             blade.position.y = 0.15; knifeGroup.add(blade);
-            const handle = new THREE.Mesh(new THREE.BoxGeometry(0.06,0.15,0.03), new THREE.MeshStandardMaterial({color:0x3d2817,roughness:0.7,metalness:0.1}));
+            const handle = new THREE.Mesh(new THREE.BoxGeometry(0.06,0.15,0.03), new THREE.MeshStandardMaterial({color:ws.handleColor,roughness:0.7,metalness:0.1}));
             handle.position.y = -0.1; knifeGroup.add(handle);
             knifeGroup.position.copy(player.position).add(new THREE.Vector3(0,1.5,0));
             const dir = new THREE.Vector3(0,0,-1).applyQuaternion(camera.getWorldQuaternion(new THREE.Quaternion()));
@@ -1437,6 +3137,7 @@
         }
         
         function startBowCharge() {
+            if(isMeleeOnly()) return; // blocked in melee challenge
             if (currentArrows <= 0 || bowCharging) return;
             bowCharging = true;
             bowChargeStart = Date.now();
@@ -1544,15 +3245,29 @@
 
         function killEnemy(en) {
             const enPos = en.position.clone();
-            scene.remove(en);
-            en.userData.healthBarElement.remove();
+
+            // Ragdoll — keep mesh in scene briefly, animate tumble
             const eIdx = enemies.indexOf(en);
             if (eIdx > -1) enemies.splice(eIdx, 1);
+            en.userData.healthBarElement.remove();
+            spawnRagdoll(en);
+
+            // Particles + shake
+            spawnExplosionParticles(enPos.clone().add(new THREE.Vector3(0, 0.5, 0)));
+            triggerScreenShake(en.userData.isBoss ? 12 : 2.5);
+
+            // Sound
+            if (en.userData.isBoss) capybaraBossRoar();
+            else capybaraDeathSound();
+
+            // Boss tracking
+            if (en.userData.isBoss) window._bossesKilled = (window._bossesKilled || 0) + 1;
+
             killCount++;
             enemiesKilledThisWave++;
             document.getElementById('kill-counter').innerText = `ELIMINATIONS: ${killCount}`;
             document.getElementById('enemies-remaining').innerText = `ENEMIES: ${enemiesInWave - enemiesKilledThisWave}`;
-            reserveAmmo = Math.min(reserveAmmo + 15, 300);
+            reserveAmmo = Math.min(reserveAmmo + 15 + skillTree.ammoPerKill, 300);
             currentArrows = Math.min(currentArrows + 5, maxArrows);
             currentSpears = Math.min(currentSpears + 2, maxSpears);
 
@@ -1561,7 +3276,7 @@
             const healAmt = skillTree.healPerKill;
             health = Math.min(health + healAmt, maxPlayerHealth);
             updateAmmoDisplay();
-            document.getElementById('mats').innerText = `WOOD: ${wood}`;
+            document.getElementById('mats').innerText = `🪵 ${wood}`;
             document.getElementById('health-bar').style.width = (health / maxPlayerHealth * 100) + '%';
 
             // Coin reward — boss worth more
@@ -1582,6 +3297,27 @@
             // Random power-up drop
             tryDropPowerUp(enPos);
 
+            // Shockwave skill: slow nearby enemies on kill
+            if(skillTree.wallHPBonus > 0) {
+                const slowRadius = 4 + skillTree.wallHPBonus * 2;
+                enemies.forEach(ally => {
+                    if(ally.position.distanceTo(enPos) < slowRadius) {
+                        const origSpeed = ally.userData._origSpeed || ally.userData.speed;
+                        ally.userData._origSpeed = origSpeed;
+                        ally.userData.speed = origSpeed * 0.4;
+                        clearTimeout(ally.userData._slowTimer);
+                        ally.userData._slowTimer = setTimeout(() => {
+                            ally.userData.speed = origSpeed;
+                        }, 1000 + skillTree.wallHPBonus * 500);
+                        spawnParticles(ally.position.clone().add(new THREE.Vector3(0,0.8,0)), 5,
+                            { color: 0x4488ff, size: 0.1, speed: 0.04, life: 18, explode: false });
+                    }
+                });
+            }
+
+            // Check achievements
+            checkAchievements();
+
             if (enemiesKilledThisWave >= enemiesInWave) waveComplete();
         }
 
@@ -1589,28 +3325,88 @@
             const completedWave = currentWave;
             currentWave++;
             enemiesKilledThisWave = 0;
-            enemiesInWave = 5 + (currentWave - 1) * 2;
+            // Enemy count scaled by difficulty
+            const dm = getDifficultyMult();
+            enemiesInWave = Math.max(3, Math.round((5 + (currentWave - 1) * 2) * dm.enemyCountMult));
             document.getElementById('wave-counter').innerText = `WAVE: ${currentWave}`;
             document.getElementById('enemies-remaining').innerText = `ENEMIES: ${enemiesInWave}`;
-            
+
+            // Auto-save removed
+            setMusicForState('calm'); // calm music during upgrade break
+
+            // Track damage-free waves for Untouchable achievement
+            if (!window._damageThisWave) window._wavesWithoutDamage = (window._wavesWithoutDamage || 0) + 1;
+            window._damageThisWave = false;
+            checkAchievements();
+
+            // Check biome change (every 10 waves)
+            const newBiome = getBiomeForWave(currentWave);
+            const biomeChanged = newBiome !== currentBiome;
+            if(biomeChanged) {
+                applyBiome(newBiome);
+                const keys = [...terrainChunks.keys()];
+                keys.forEach(k => removeTerrainChunk(k));
+                lastPlayerChunkPos = { x: Infinity, z: Infinity };
+            }
+
+            const newWeather = pickWeather();
+            applyWeather(newWeather);
+
+            const isBossWave  = (currentWave % 5 === 0);
+            const isSwarmWave = !isBossWave && (currentWave % 7 === 0);
+            if(isSwarmWave) {
+                enemiesInWave = Math.min(enemiesInWave * 3, 60);
+                document.getElementById('enemies-remaining').innerText = `ENEMIES: ${enemiesInWave}`;
+            }
+            window._isSwarmWave = isSwarmWave;
+
+            let bannerText = isBossWave  ? `⚠️ WAVE ${completedWave} COMPLETE! BOSS INCOMING!`
+                           : isSwarmWave ? `🐀 WAVE ${completedWave} COMPLETE! SWARM INCOMING!`
+                           : `WAVE ${completedWave} COMPLETE!`;
             const waveMsg = document.createElement('div');
             waveMsg.className = 'indicator indicator--center indicator--wave-complete';
-            const isBossWave = (currentWave % 5 === 0);
-            waveMsg.innerText = isBossWave ? `⚠️ WAVE ${completedWave} COMPLETE! BOSS INCOMING!` : `WAVE ${completedWave} COMPLETE!`;
-            waveMsg.style.color = isBossWave ? '#ff4400' : '';
+            waveMsg.innerText = bannerText;
+            waveMsg.style.color = isBossWave ? '#ff4400' : isSwarmWave ? '#ff9900' : '';
             document.body.appendChild(waveMsg);
-            
+
             pendingWaveSpawn = true;
             pendingWaveSize = enemiesInWave;
             window._bossSpawnedThisWave = false;
             setTimeout(() => {
                 waveMsg.remove();
+                if(biomeChanged || newWeather !== 'clear') showBiomeWeatherBanner(biomeChanged, currentBiome, newBiome, newWeather);
                 showUpgradeScreen(completedWave);
             }, 1800);
         }
         
+        function showFlashMessage(text, color='#ffffff') {
+            const el = document.createElement('div');
+            el.style.cssText = `position:absolute;top:38%;left:50%;transform:translate(-50%,-50%);color:${color};font-size:32px;font-weight:900;text-shadow:2px 2px 10px rgba(0,0,0,0.9);pointer-events:none;z-index:300;font-family:Arial Black,sans-serif;`;
+            el.textContent = text;
+            document.body.appendChild(el);
+            setTimeout(() => { el.style.transition='opacity 0.5s'; el.style.opacity='0'; setTimeout(()=>el.remove(),500); }, 1500);
+        }
+
+        function takeDamage(amount) {
+            const reduced = Math.max(1, Math.round(amount * (1 - skillTree.damageReduction)));
+            health -= reduced;
+            document.getElementById('health-bar').style.width = Math.max(0, health / maxPlayerHealth * 100) + '%';
+            if(health <= 0) {
+                if(skillTree.lastStandRanks > 0 && !skillTree.lastStandUsed) {
+                    skillTree.lastStandUsed = true;
+                    health = Math.ceil(maxPlayerHealth * 0.05);
+                    document.getElementById('health-bar').style.width = (health / maxPlayerHealth * 100) + '%';
+                    showFlashMessage('⚰️ LAST STAND!', '#ff0066');
+                    triggerScreenShake(10);
+                } else {
+                    showGameOver(currentWave - 1, killCount);
+                }
+            }
+            return reduced;
+        }
+
         function tryAutoFire() {
-            if(!isMouseDown || !gameStarted || document.pointerLockElement !== document.body) return;
+            if(!isMouseDown || !gameStarted) return;
             if (activeSlot === 1) shootKnife();
         }
 
@@ -1618,18 +3414,12 @@
             trees.forEach(tree => {
                 if(player.position.distanceTo(tree.position) < 4) {
                     wood += 10;
-                    document.getElementById('mats').innerText = `WOOD: ${wood}`;
+                    document.getElementById('mats').innerText = `🪵 ${wood}`;
                     tree.scale.set(1.2,1.2,1.2);
                     hitSound();
                     setTimeout(() => tree.scale.set(1,1,1), 100);
                 }
             });
-            const harvestRay = new THREE.Raycaster();
-            harvestRay.setFromCamera(new THREE.Vector2(0,0), camera);
-            const hits = harvestRay.intersectObjects(collidables);
-            if(hits.length > 0 && hits[0].distance < 4 && hits[0].object.userData.type === 'wall') {
-                damageWall(hits[0].object, 10);
-            }
         }
         
         function updateAmmoDisplay() {
@@ -1742,8 +3532,6 @@
             if(e.code==='Digit2') { activeSlot=2; updateInventoryUI(); updateHeldWeapon(); updateAmmoDisplay(); }
             if(e.code==='Digit3') { activeSlot=3; bowCharging=false; updateInventoryUI(); updateHeldWeapon(); updateAmmoDisplay(); }
             if(e.code==='Digit4') { activeSlot=4; bowCharging=false; updateInventoryUI(); updateHeldWeapon(); updateAmmoDisplay(); }
-            if(e.code==='KeyQ') build('ramp');
-            if(e.code==='KeyE') build('wall');
             if(e.code==='KeyR') reload();
         };
         window.onkeyup = (e) => keys[e.code] = false;
@@ -1759,38 +3547,115 @@
             player.userData.heldAxe.visible = (activeSlot===4);
         }
 
+        // ── Input: works with OR without pointer lock ──────────────────────────
+        let pointerLocked = false;
+        let isDragging    = false;  // fallback: right-click drag to look
+
+        document.addEventListener('pointerlockchange', () => {
+            pointerLocked = document.pointerLockElement === document.body;
+        });
+
         document.addEventListener('mousedown', (e) => {
             if(!gameStarted) return;
             if(upgradeScreenOpen || shopScreenOpen) return;
-            if(document.pointerLockElement !== document.body) {
-                document.body.requestPointerLock();
-            } else {
-                isMouseDown = true;
-                if(activeSlot===2) startBowCharge();
-                else if(activeSlot>=1 && activeSlot<=4) useWeapon();
+
+            // Try to acquire pointer lock on any click (silently ignore failure)
+            if(!pointerLocked) {
+                try { document.body.requestPointerLock(); } catch(_) {}
             }
+
+            if(e.button === 2) { isDragging = true; return; } // right-drag to look
+
+            isMouseDown = true;
+            if(activeSlot===2) startBowCharge();
+            else if(activeSlot>=1 && activeSlot<=4) useWeapon();
         });
+
         document.addEventListener('mouseup', (e) => {
             if(activeSlot===2 && bowCharging) releaseBow();
             isMouseDown = false; bowCharging = false;
+            if(e.button === 2) isDragging = false;
         });
+
+        document.addEventListener('contextmenu', e => e.preventDefault());
+
         document.addEventListener('mousemove', (e) => {
-            if(document.pointerLockElement === document.body) {
-                const sens = 0.002;
-                player.rotation.y -= e.movementX * sens;
-                pitch = Math.max(-0.8, Math.min(0.8, pitch - e.movementY * sens));
+            if(!gameStarted) return;
+            const sens = 0.002;
+            // Use movement from pointer lock OR from drag delta
+            const dx = (pointerLocked || isDragging) ? e.movementX : 0;
+            const dy = (pointerLocked || isDragging) ? e.movementY : 0;
+            if(dx !== 0 || dy !== 0) {
+                player.rotation.y -= dx * sens;
+                pitch = Math.max(-0.8, Math.min(0.8, pitch - dy * sens));
                 camPivot.rotation.x += (pitch - camPivot.rotation.x) * 0.3;
             }
         });
         
-        document.getElementById('start-button').addEventListener('click', () => {
+        function launchGame() {
             document.getElementById('start-screen').classList.add('u-hidden');
+            document.getElementById('hud-root').style.display = 'block';
             gameStarted = true;
             audioCtx.resume();
-            document.body.requestPointerLock();
+            // Request pointer lock — if it fails controls still work via right-drag
+            try { document.body.requestPointerLock(); } catch(_) {}
             updateHeldWeapon();
+            activeDifficulty = selectedDifficulty;
+            activeMode       = selectedMode;
+            activeChallenge  = selectedChallenge;
+            runStartTime     = Date.now();
+            applyDifficultyToGame(activeDifficulty);
+            applyModeToGame(activeMode, activeChallenge);
             updateAmmoDisplay();
-        });
+            startAmbientSounds();
+            setMusicForState('intense');
+            applySkinToPlayer();
+            applyWeaponSkin();
+
+            // Show control hint if pointer lock isn't available
+            setTimeout(() => {
+                if(!pointerLocked) {
+                    const hint = document.createElement('div');
+                    hint.id = 'control-hint';
+                    hint.style.cssText = 'position:absolute;bottom:100px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.75);color:#fff;padding:10px 20px;border-radius:10px;font-size:14px;z-index:200;pointer-events:none;text-align:center;border:1px solid rgba(255,255,255,0.2);';
+                    hint.innerHTML = '🖱️ <b>Left-click</b> to shoot &nbsp;|&nbsp; <b>Right-click drag</b> to look around &nbsp;|&nbsp; <b>WASD</b> to move';
+                    document.body.appendChild(hint);
+                    setTimeout(() => { if(hint.parentNode) hint.remove(); }, 5000);
+                }
+            }, 800);
+        }
+
+        function applyDifficultyToGame(diff) {
+            const d = DIFFICULTIES[diff];
+            if(!d) return;
+            // Modify maxPlayerHealth
+            maxPlayerHealth = Math.max(25, maxPlayerHealth + d.playerHPBonus);
+            health = Math.min(health, maxPlayerHealth);
+            document.getElementById('health-bar').style.width = (health / maxPlayerHealth * 100) + '%';
+            // Enemy scaling is applied via getDifficultyMult() at spawn time
+        }
+
+        function applyModeToGame(mode, challenge) {
+            if(mode === 'challenge') {
+                if(challenge === 'glass') {
+                    maxPlayerHealth = 1;
+                    health = 1;
+                    document.getElementById('health-bar').style.width = '100%';
+                }
+                // melee and speedrun: constraints enforced via isMeleeOnly() / isGlassCannon() at runtime
+                // Show challenge reminder in HUD
+                const badge = document.createElement('div');
+                badge.id = 'challenge-hud-badge';
+                badge.style.cssText = 'position:absolute;top:155px;left:50%;transform:translateX(-50%);color:#ffa500;font-size:14px;font-weight:900;text-shadow:2px 2px 6px rgba(0,0,0,0.9);pointer-events:none;z-index:50;';
+                const c = CHALLENGES.find(ch=>ch.id===challenge);
+                badge.innerText = c ? `${c.label} ACTIVE` : '';
+                document.body.appendChild(badge);
+            }
+        }
+
+        function getDifficultyMult() { return DIFFICULTIES[activeDifficulty] || DIFFICULTIES.normal; }
+
+        document.getElementById('start-button').addEventListener('click', () => launchGame());
 
         function updateUIHealthBar(mesh, offsetY = 2.2) {
             if(!mesh.userData.healthBarElement) return;
@@ -1809,7 +3674,15 @@
             
             updateDayNightCycle();
             animateClouds();
+            updateRain();
+            updateStormLightning();
+            updateWater();
             updatePowerUps();
+            updateParticles();
+            updateRagdolls();
+            updateMinimap();
+            updateScreenShake();
+            if (Date.now() % 30 < 2) checkAchievements(); // periodic poll
             tryAutoFire();
             
             // Bow charge bar
@@ -1829,16 +3702,30 @@
             if(keys['KeyS']) { moveDir.z += 1; isMoving = true; }
             if(keys['KeyA']) { moveDir.x -= 1; isMoving = true; }
             if(keys['KeyD']) { moveDir.x += 1; isMoving = true; }
+
+            // Check if player is on water or ice
+            let waterMult = 1.0, iceDecel = false;
+            for(const zone of waterZonesList) {
+                const dx = player.position.x - zone.x, dz = player.position.z - zone.z;
+                if(dx*dx + dz*dz < zone.r * zone.r) {
+                    if(zone.ice) { iceDecel = true; }
+                    else { waterMult = 0.45; }
+                    break;
+                }
+            }
+
             const isSprinting = (keys['ShiftLeft'] || keys['ShiftRight']) && isMoving;
-            const speed = isSprinting ? baseSpeed * sprintMult : baseSpeed;
+            const berserkerMult = (skillTree.berserkerRanks > 0 && health / maxPlayerHealth < 0.3) ? 1 + skillTree.berserkerRanks * 0.25 : 1;
+            const effectiveSprint = sprintMult * (1 + skillTree.sprintBonus);
+            const speed = (isSprinting ? baseSpeed * effectiveSprint : baseSpeed) * waterMult * berserkerMult;
             moveDir.normalize().applyQuaternion(player.quaternion);
             if(isMoving) { playerVelocity.lerp(moveDir.multiplyScalar(speed), 0.03); }
-            else { playerVelocity.multiplyScalar(0.85); }
+            else { playerVelocity.multiplyScalar(iceDecel ? 0.995 : 0.85); } // ice is slippery
             document.getElementById('sprint-indicator').classList.toggle('u-hidden', !isSprinting);
             
             if(playerVelocity.length() > 0.001) {
                 const ray = new THREE.Raycaster(new THREE.Vector3(player.position.x,0.5,player.position.z), playerVelocity.clone().normalize());
-                const hits = ray.intersectObjects([...collidables, ...rampColliders]);
+                const hits = ray.intersectObjects(collidables);
                 const blocked = hits.length > 0 && hits[0].distance < 0.8;
                 const nx = player.position.x + playerVelocity.x;
                 const nz = player.position.z + playerVelocity.z;
@@ -1850,7 +3737,10 @@
                 if(!blocked && !blockedTree) player.position.add(playerVelocity);
             }
             
-            if(isMoving && playerGrounded) footstepSound(isSprinting);
+            if(isMoving && playerGrounded) {
+                footstepSound(isSprinting);
+                if(isSprinting && Math.random() < 0.25) spawnDustParticles(player.position.clone());
+            }
             animateCharacter(player, isMoving);
             updateTerrain();
             
@@ -1858,10 +3748,10 @@
             const activeFloors = [];
             terrainChunks.forEach(c => { if(c.floor) activeFloors.push(c.floor); });
             const pDownRay = new THREE.Raycaster(new THREE.Vector3(player.position.x, player.position.y+1.2, player.position.z), new THREE.Vector3(0,-1,0));
-            const pHit = pDownRay.intersectObjects([...collidables, ...rampColliders, ...activeFloors]);
+            const pHit = pDownRay.intersectObjects([...collidables, ...activeFloors]);
             if(pHit.length > 0 && pHit[0].distance <= 1.25) { player.position.y = (player.position.y+1.2) - pHit[0].distance; playerVY=0; playerGrounded=true; }
             else playerGrounded = false;
-            if(keys['Space'] && playerGrounded) { playerVY=0.2; playerGrounded=false; }
+            if(keys['Space'] && playerGrounded) { playerVY = 0.2 + skillTree.jumpHeightBonus; playerGrounded=false; }
 
             // Enemy AI
             enemies.forEach((en, idx) => {
@@ -1877,6 +3767,53 @@
                 const type = en.userData.enemyType || 'normal';
                 const dirToPlayer = new THREE.Vector3().subVectors(player.position, en.position).normalize();
                 const now = Date.now();
+
+                // --- BOSS PHASE TRANSITION ---
+                if(type === 'boss' && en.userData.phase === 1 && en.userData.health < en.userData.maxHealth * 0.5) {
+                    en.userData.phase = 2;
+                    en.userData.speed       = en.userData._baseSpeed * 1.7;
+                    en.userData.attackDamage= 60;
+                    en.userData.spitCooldown= 900;
+                    en.userData.attackCooldown = 550;
+                    // Flash all body parts red
+                    en.traverse(c => { if(c.isMesh && c.material) { c.material = c.material.clone(); c.material.emissive = new THREE.Color(0x880000); c.material.emissiveIntensity = 0.5; } });
+                    const phaseEl = document.createElement('div');
+                    phaseEl.style.cssText = 'position:absolute;top:40%;left:50%;transform:translate(-50%,-50%);color:#ff0000;font-size:40px;font-weight:900;text-shadow:0 0 20px #ff0000;pointer-events:none;z-index:300;font-family:Arial Black,sans-serif;';
+                    phaseEl.textContent = '💀 BOSS ENRAGED!';
+                    document.body.appendChild(phaseEl);
+                    triggerScreenShake(14);
+                    playSound(80, 0.5, 'sawtooth', 0.2);
+                    setTimeout(() => phaseEl.remove(), 2200);
+                }
+
+                // --- HEALER: pulse glow and heal nearby allies ---
+                if(type === 'healer') {
+                    const pulse = 0.4 + Math.sin(now * 0.004) * 0.4;
+                    if(en.userData.crossH) en.userData.crossH.material.emissiveIntensity = pulse;
+                    if(en.userData.crossV) en.userData.crossV.material.emissiveIntensity = pulse;
+                    if(now - en.userData.lastHeal > en.userData.healCooldown) {
+                        en.userData.lastHeal = now;
+                        enemies.forEach(ally => {
+                            if(ally === en) return;
+                            const healDist = en.position.distanceTo(ally.position);
+                            if(healDist < en.userData.healRange) {
+                                ally.userData.health = Math.min(ally.userData.health + en.userData.healAmount, ally.userData.maxHealth);
+                                if(ally.userData.healthBarFill) ally.userData.healthBarFill.style.width = (ally.userData.health / ally.userData.maxHealth * 100) + '%';
+                                // Green heal particle
+                                spawnParticles(ally.position.clone().add(new THREE.Vector3(0,1,0)), 4,
+                                    { color: 0x00ff88, size: 0.09, speed: 0.05, life: 22, explode: false });
+                            }
+                        });
+                    }
+                }
+
+                // --- RANGED: throw mud, keep distance ---
+                if(type === 'ranged') {
+                    if(dist < en.userData.throwRange && now - en.userData.lastThrow > en.userData.throwCooldown) {
+                        en.userData.lastThrow = now;
+                        fireRangedThrow(en);
+                    }
+                }
 
                 // --- EXPLODER: pulse belly glow and explode on contact ---
                 if(type === 'exploder') {
@@ -1898,50 +3835,32 @@
                     }
                 }
 
-                // --- SCOUT / BOSS: jump over walls ---
-                if(type === 'scout' || type === 'boss') {
-                    const wallRay = new THREE.Raycaster(new THREE.Vector3(en.position.x,0.5,en.position.z), dirToPlayer);
-                    const wallHits = wallRay.intersectObjects(collidables.filter(c => c.userData.type === 'wall'));
-                    if(wallHits.length > 0 && wallHits[0].distance < 2.5 && now - en.userData.lastJump > en.userData.jumpCooldown) {
-                        en.userData.vY = 0.28;
-                        en.userData.lastJump = now;
-                    }
-                }
-
                 const eRay = new THREE.Raycaster(new THREE.Vector3(en.position.x,0.5,en.position.z), dirToPlayer);
-                const eHits = eRay.intersectObjects([...collidables, ...rampColliders]);
+                const eHits = eRay.intersectObjects(collidables);
                 let isBlocked = (eHits.length > 0 && eHits[0].distance < 0.8);
-                let isAttackingWall = false;
 
-                // Spitters try to maintain preferred distance
-                if(type === 'spitter' && dist < (en.userData.preferredDistance * 0.7)) {
+                // Spitters / healers / ranged try to maintain preferred distance
+                if((type === 'spitter' || type === 'healer' || type === 'ranged') && dist < (en.userData.preferredDistance * 0.7)) {
                     const backDir = dirToPlayer.clone().negate();
                     en.position.add(new THREE.Vector3(backDir.x,0,backDir.z).multiplyScalar(en.userData.speed));
                 } else if(!isBlocked && dist > en.userData.attackRange) {
                     en.position.add(new THREE.Vector3(dirToPlayer.x,0,dirToPlayer.z).multiplyScalar(en.userData.speed));
-                } else if(isBlocked && eHits[0].object.userData.type==='wall') {
-                    isAttackingWall = true;
-                    if(now - en.userData.lastAttack > en.userData.attackCooldown) {
-                        const wallDmg = type==='tank' ? 30 : type==='boss' ? 50 : 15;
-                        damageWall(eHits[0].object, wallDmg);
-                        en.userData.lastAttack = now;
-                    }
                 } else if(isBlocked) {
                     const rDir = new THREE.Vector3(-dirToPlayer.z,0,dirToPlayer.x).normalize();
                     const lDir = new THREE.Vector3(dirToPlayer.z,0,-dirToPlayer.x).normalize();
                     const rRay = new THREE.Raycaster(new THREE.Vector3(en.position.x,0.5,en.position.z), rDir);
                     const lRay = new THREE.Raycaster(new THREE.Vector3(en.position.x,0.5,en.position.z), lDir);
-                    const rH = rRay.intersectObjects([...collidables,...rampColliders]);
-                    const lH = lRay.intersectObjects([...collidables,...rampColliders]);
+                    const rH = rRay.intersectObjects(collidables);
+                    const lH = lRay.intersectObjects(collidables);
                     if(!(rH.length > 0 && rH[0].distance < 0.8)) en.position.add(rDir.multiplyScalar(en.userData.speed * 0.7));
                     else if(!(lH.length > 0 && lH[0].distance < 0.8)) en.position.add(lDir.multiplyScalar(en.userData.speed * 0.7));
                 }
 
-                animateCharacter(en, !isBlocked && dist > en.userData.attackRange, isAttackingWall);
+                animateCharacter(en, !isBlocked && dist > en.userData.attackRange, false);
                 en.rotation.y = Math.atan2(dirToPlayer.x, dirToPlayer.z);
                 en.position.y += en.userData.vY; en.userData.vY -= 0.01;
                 const eDown = new THREE.Raycaster(new THREE.Vector3(en.position.x,en.position.y+1.2,en.position.z), new THREE.Vector3(0,-1,0));
-                const eHit2 = eDown.intersectObjects([...collidables,...rampColliders,...activeFloors]);
+                const eHit2 = eDown.intersectObjects([...collidables, ...activeFloors]);
                 if(eHit2.length > 0 && eHit2[0].distance <= 1.25) { en.position.y=(en.position.y+1.2)-eHit2[0].distance; en.userData.vY=0; }
 
                 updateUIHealthBar(en, 2.2 * en.scale.y);
@@ -1949,10 +3868,12 @@
                 // Melee damage to player
                 const meleeDist = en.userData.attackRange * en.scale.x;
                 if(dist < meleeDist && now - lastDamageTime > 1000 && type !== 'exploder' && !isPowerUpActive('invincible')) {
-                    const dmg = en.userData.attackDamage || 20;
-                    health -= dmg; lastDamageTime = now; damageSound();
-                    document.getElementById('health-bar').style.width = (health/maxPlayerHealth*100) + '%';
-                    if(health <= 0) { showGameOver(currentWave - 1, killCount); }
+                    const rawDmg = en.userData.attackDamage || 20;
+                    const dmg = takeDamage(rawDmg);
+                    lastDamageTime = now; damageSound();
+                    window._damageThisWave = true;
+                    triggerScreenShake(en.userData.isBoss ? 9 : 5);
+                    spawnDamageNumber(player.position.clone().add(new THREE.Vector3(0,2,0)), dmg, false);
                 }
             });
 
@@ -1965,15 +3886,15 @@
                 if(proj.position.y < 0.2 || proj.userData.life <= 0) { scene.remove(proj); enemyProjectiles.splice(i,1); continue; }
                 if(proj.position.distanceTo(player.position) < 1.0) {
                     if(!isPowerUpActive('invincible')) {
-                        health -= proj.userData.damage; lastDamageTime = Date.now(); damageSound();
-                        document.getElementById('health-bar').style.width = Math.max(0, health/maxPlayerHealth*100) + '%';
+                        takeDamage(proj.userData.damage);
+                        damageSound();
                     }
                     scene.remove(proj); enemyProjectiles.splice(i,1);
-                    if(health <= 0) { showGameOver(currentWave - 1, killCount); }
                 }
             }
 
             collidables.forEach(c => { if(c.userData.type==='wall') updateUIHealthBar(c, 1.8); });
+            // (wall health bars kept for safety, walls no longer buildable)
 
             // Bullet physics
             for(let i=bullets.length-1; i>=0; i--) {
@@ -1986,9 +3907,8 @@
                     bullets[i].userData.lastPos || bullets[i].position.clone().sub(bullets[i].userData.velocity),
                     bullets[i].userData.velocity.clone().normalize(), 0, bullets[i].userData.velocity.length()
                 );
-                const obsHits = bRay.intersectObjects([...collidables, ...rampColliders]);
+                const obsHits = bRay.intersectObjects(collidables);
                 if(obsHits.length > 0) {
-                    if(obsHits[0].object.userData.type==='wall') damageWall(obsHits[0].object, 10);
                     scene.remove(bullets[i]); bullets.splice(i, 1); continue;
                 }
                 bullets[i].userData.lastPos = bullets[i].position.clone();
@@ -2007,11 +3927,40 @@
                     const isBody = bp.x>=bMinX && bp.x<=bMaxX && bp.y>=bMinY && bp.y<=bMaxY && bp.z>=bMinZ && bp.z<=bMaxZ;
                     if(isHead || isBody) {
                         const base = bullets[i].userData.damage || 34;
-                        const dmg = isHead ? base * 2 : base;
+                        let dmg = isHead ? base * skillTree.headshotMult : base;
+
+                        // ── ARMORED: 85% damage reduction from the front ──
+                        if(en.userData.enemyType === 'armored') {
+                            const enFwd  = new THREE.Vector3(Math.sin(en.rotation.y), 0, Math.cos(en.rotation.y));
+                            const bDir   = bullets[i].userData.velocity.clone().normalize();
+                            const isFrontal = bDir.dot(enFwd) < -0.35; // bullet heading into the front face
+                            if(isFrontal) {
+                                dmg = Math.max(1, Math.round(dmg * 0.15));
+                                // Show "ARMORED!" hint once per hit
+                                const alreadyShowing = document.getElementById('armor-hint');
+                                if(!alreadyShowing) {
+                                    const ah = document.createElement('div');
+                                    ah.id = 'armor-hint';
+                                    ah.style.cssText = 'position:absolute;top:42%;left:50%;transform:translate(-50%,-50%);color:#aaaaff;font-size:22px;font-weight:900;text-shadow:1px 1px 6px #000;pointer-events:none;z-index:300;';
+                                    ah.textContent = '🛡️ ARMORED! Flank it!';
+                                    document.body.appendChild(ah);
+                                    setTimeout(() => ah.remove(), 1400);
+                                }
+                            }
+                        }
+
                         en.userData.health -= dmg;
                         en.userData.healthBarFill.style.width = (en.userData.health / en.userData.maxHealth * 100) + '%';
                         hitSound();
+                        // Floating damage number
+                        const hitWorldPos = en.position.clone().add(new THREE.Vector3(0, 1.2, 0));
+                        spawnDamageNumber(hitWorldPos, dmg, isHead);
+                        // Dust/blood particle burst on hit
+                        const hitPos = bullets[i].position.clone();
+                        spawnParticles(hitPos, 8, { color: isHead ? 0xcc2200 : 0x884422, size: 0.1, speed: 0.08, life: 22, explode: true });
                         if(isHead) {
+                            window._headshotsThisRun = (window._headshotsThisRun || 0) + 1;
+                            triggerScreenShake(4);
                             const hs = document.createElement('div');
                             hs.className = 'indicator indicator--center indicator--headshot';
                             hs.innerText = 'HEADSHOT!';
