@@ -202,6 +202,79 @@ body{margin:0;overflow:hidden;background-color:#6eb1ff;font-family:'Segoe UI','R
     <!-- Achievement toast container -->
     <div id="achievement-toasts" style="position:absolute;top:20px;right:20px;display:flex;flex-direction:column;gap:8px;z-index:200;pointer-events:none;align-items:flex-end;"></div>
 
+    <!-- ── PAUSE MENU ─────────────────────────────────────────────────── -->
+    <div id="pause-screen" style="
+        display:none;position:absolute;top:0;left:0;width:100%;height:100%;
+        z-index:900;background:rgba(0,0,0,0.72);backdrop-filter:blur(4px);
+        align-items:center;justify-content:center;flex-direction:column;
+    ">
+        <div style="
+            background:rgba(10,10,20,0.95);border:1px solid rgba(255,255,255,0.15);
+            border-radius:18px;padding:36px 44px;min-width:320px;max-width:380px;
+            box-shadow:0 8px 40px rgba(0,0,0,0.7);text-align:center;
+        ">
+            <div style="font-size:36px;font-weight:900;color:#fff;letter-spacing:2px;margin-bottom:6px;font-family:'Arial Black',sans-serif;">⏸ PAUSED</div>
+            <div style="color:rgba(255,255,255,0.35);font-size:13px;margin-bottom:28px;letter-spacing:1px;">Press ESC to resume</div>
+
+            <!-- Volume section -->
+            <div style="text-align:left;margin-bottom:24px;">
+                <div style="color:#f1c40f;font-size:11px;font-weight:800;letter-spacing:2px;margin-bottom:14px;">🎚️ SOUND</div>
+
+                <!-- Mute toggle row -->
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+                    <span style="color:rgba(255,255,255,0.75);font-size:13px;">Mute All</span>
+                    <div id="mute-toggle" style="width:44px;height:24px;border-radius:12px;cursor:pointer;background:#555;position:relative;transition:background 0.2s;flex-shrink:0;">
+                        <div id="mute-knob" style="position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left 0.18s;pointer-events:none;"></div>
+                    </div>
+                </div>
+
+                <!-- Master -->
+                <div style="margin-bottom:12px;">
+                    <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+                        <span style="color:rgba(255,255,255,0.6);font-size:12px;">Master</span>
+                        <span id="vol-master-val" style="color:#f1c40f;font-size:12px;font-weight:700;">70%</span>
+                    </div>
+                    <input id="vol-master" type="range" min="0" max="100" value="70" style="width:100%;accent-color:#f1c40f;cursor:pointer;">
+                </div>
+
+                <!-- SFX -->
+                <div style="margin-bottom:12px;">
+                    <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+                        <span style="color:rgba(255,255,255,0.6);font-size:12px;">SFX</span>
+                        <span id="vol-sfx-val" style="color:#2ecc71;font-size:12px;font-weight:700;">100%</span>
+                    </div>
+                    <input id="vol-sfx" type="range" min="0" max="100" value="100" style="width:100%;accent-color:#2ecc71;cursor:pointer;">
+                </div>
+
+                <!-- Music -->
+                <div>
+                    <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+                        <span style="color:rgba(255,255,255,0.6);font-size:12px;">Music &amp; Ambient</span>
+                        <span id="vol-music-val" style="color:#3498db;font-size:12px;font-weight:700;">40%</span>
+                    </div>
+                    <input id="vol-music" type="range" min="0" max="100" value="40" style="width:100%;accent-color:#3498db;cursor:pointer;">
+                </div>
+            </div>
+
+            <!-- Buttons -->
+            <button id="pause-resume-btn" style="
+                width:100%;padding:13px;font-size:18px;font-weight:900;
+                font-family:'Arial Black',sans-serif;background:#2ecc71;
+                border:none;border-radius:10px;cursor:pointer;color:#fff;
+                letter-spacing:1px;margin-bottom:10px;
+                box-shadow:0 4px 14px rgba(46,204,113,0.4);
+                transition:transform 0.1s,box-shadow 0.1s;
+            ">▶ RESUME</button>
+
+            <button id="pause-quit-btn" style="
+                width:100%;padding:10px;font-size:14px;font-weight:700;
+                background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);
+                border-radius:10px;cursor:pointer;color:rgba(255,255,255,0.6);
+                transition:background 0.15s;
+            ">Quit to Menu</button>
+        </div>
+    </div>
+
     <div id="start-screen" class="modal modal--start" style="overflow-y:auto;align-items:center;justify-content:flex-start;padding:30px 20px;z-index:1000;">
       <div style="width:100%;max-width:960px;margin:0 auto;">
         <h1 class="modal__title modal__title--lg" style="text-align:center;margin-bottom:4px;">🐾 CAPYBARA SURVIVOR</h1>
@@ -1239,12 +1312,130 @@ body{margin:0;overflow:hidden;background-color:#6eb1ff;font-family:'Segoe UI','R
         // =====================================================================
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         const audioCtx = new AudioContext();
-        
+
+        // ── Volume routing ──────────────────────────────────────────────
+        // All SFX  → sfxGain  → masterGain → destination
+        // All music→ musicGain → masterGain → destination
+        const masterGain = audioCtx.createGain();
+        masterGain.connect(audioCtx.destination);
+
+        const sfxGain   = audioCtx.createGain();
+        sfxGain.connect(masterGain);
+
+        const ambientMusicGain = audioCtx.createGain();
+        ambientMusicGain.connect(masterGain);
+
+        // Load persisted volumes (default: master 0.7, sfx 1.0, music 0.4)
+        function _loadVol(key, def) { try { const v = parseFloat(localStorage.getItem(key)); return isNaN(v) ? def : v; } catch(e) { return def; } }
+        let volMaster  = _loadVol('capyvol_master', 0.7);
+        let volSFX     = _loadVol('capyvol_sfx',    1.0);
+        let volMusic   = _loadVol('capyvol_music',  0.4);
+        let volMuted   = localStorage.getItem('capyvol_muted') === '1';
+
+        function _applyVolumes() {
+            masterGain.gain.value     = volMuted ? 0 : volMaster;
+            sfxGain.gain.value        = volSFX;
+            ambientMusicGain.gain.value = volMusic;
+        }
+        _applyVolumes();
+
+        function _saveVolumes() {
+            try {
+                localStorage.setItem('capyvol_master', volMaster);
+                localStorage.setItem('capyvol_sfx',    volSFX);
+                localStorage.setItem('capyvol_music',  volMusic);
+                localStorage.setItem('capyvol_muted',  volMuted ? '1' : '0');
+            } catch(e) {}
+        }
+
+        // ── Pause + Volume system ────────────────────────────────────────
+        let gamePaused = false;
+
+        function openPauseMenu() {
+            if(!gameStarted) return;
+            gamePaused = true;
+            // Clear held keys so movement doesn't carry over on resume
+            Object.keys(keys).forEach(k => keys[k] = false);
+            playerVelocity.set(0, 0, 0);
+            isMouseDown = false;
+            bowCharging = false;
+            document.getElementById('pause-screen').style.display = 'flex';
+            if(document.pointerLockElement) document.exitPointerLock();
+            setMusicForState('stop');
+        }
+
+        function closePauseMenu() {
+            gamePaused = false;
+            document.getElementById('pause-screen').style.display = 'none';
+            // Delay pointer lock so the current click event fully resolves first
+            setTimeout(() => {
+                try { document.body.requestPointerLock(); } catch(_) {}
+            }, 120);
+            setMusicForState(enemies.length > 0 ? 'intense' : 'calm');
+        }
+
+        function initVolPanel() {
+            const muteToggle = document.getElementById('mute-toggle');
+            const muteKnob   = document.getElementById('mute-knob');
+            const sliderM    = document.getElementById('vol-master');
+            const sliderS    = document.getElementById('vol-sfx');
+            const sliderA    = document.getElementById('vol-music');
+            const valM       = document.getElementById('vol-master-val');
+            const valS       = document.getElementById('vol-sfx-val');
+            const valA       = document.getElementById('vol-music-val');
+
+            // Sync sliders to loaded values
+            sliderM.value = Math.round(volMaster * 100);
+            sliderS.value = Math.round(volSFX    * 100);
+            sliderA.value = Math.round(volMusic  * 100);
+            valM.textContent = sliderM.value + '%';
+            valS.textContent = sliderS.value + '%';
+            valA.textContent = sliderA.value + '%';
+
+            function updateMuteUI() {
+                muteToggle.style.background = volMuted ? '#e74c3c' : '#2ecc71';
+                muteKnob.style.left = volMuted ? '3px' : '23px';
+            }
+            updateMuteUI();
+
+            muteToggle.addEventListener('click', () => {
+                volMuted = !volMuted;
+                _applyVolumes(); _saveVolumes(); updateMuteUI();
+            });
+            sliderM.addEventListener('input', () => {
+                volMaster = sliderM.value / 100;
+                valM.textContent = sliderM.value + '%';
+                _applyVolumes(); _saveVolumes();
+            });
+            sliderS.addEventListener('input', () => {
+                volSFX = sliderS.value / 100;
+                valS.textContent = sliderS.value + '%';
+                _applyVolumes(); _saveVolumes();
+            });
+            sliderA.addEventListener('input', () => {
+                volMusic = sliderA.value / 100;
+                valA.textContent = sliderA.value + '%';
+                _applyVolumes(); _saveVolumes();
+            });
+
+            document.getElementById('pause-resume-btn').addEventListener('click', closePauseMenu);
+            document.getElementById('pause-quit-btn').addEventListener('click', () => {
+                location.reload();
+            });
+
+            // Hover effects on buttons
+            const resumeBtn = document.getElementById('pause-resume-btn');
+            resumeBtn.addEventListener('mouseenter', () => { resumeBtn.style.transform='scale(1.03)'; resumeBtn.style.boxShadow='0 6px 20px rgba(46,204,113,0.55)'; });
+            resumeBtn.addEventListener('mouseleave', () => { resumeBtn.style.transform=''; resumeBtn.style.boxShadow='0 4px 14px rgba(46,204,113,0.4)'; });
+        }
+        document.addEventListener('DOMContentLoaded', initVolPanel);
+        if(document.readyState !== 'loading') initVolPanel();
+
         function playSound(frequency, duration, type = 'sine', volume = 0.3) {
             const oscillator = audioCtx.createOscillator();
             const gainNode = audioCtx.createGain();
             oscillator.connect(gainNode);
-            gainNode.connect(audioCtx.destination);
+            gainNode.connect(sfxGain);   // ← routes through sfxGain → masterGain
             oscillator.frequency.value = frequency;
             oscillator.type = type;
             gainNode.gain.setValueAtTime(volume, audioCtx.currentTime);
@@ -1616,7 +1807,7 @@ body{margin:0;overflow:hidden;background-color:#6eb1ff;font-family:'Segoe UI','R
                 osc.frequency.value = baseFreq * mult;
                 gain.gain.setValueAtTime(0, audioCtx.currentTime);
                 gain.gain.linearRampToValueAtTime(vol, audioCtx.currentTime + 2.5);
-                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.connect(gain); gain.connect(ambientMusicGain);
                 osc.start();
                 musicNodes.push({ osc, gain });
             });
@@ -1643,7 +1834,7 @@ body{margin:0;overflow:hidden;background-color:#6eb1ff;font-family:'Segoe UI','R
                 osc.frequency.value = baseFreq * mult;
                 gain.gain.setValueAtTime(0, audioCtx.currentTime);
                 gain.gain.linearRampToValueAtTime(vol, audioCtx.currentTime + 1.2);
-                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.connect(gain); gain.connect(ambientMusicGain);
                 osc.start();
                 musicNodes.push({ osc, gain });
             });
@@ -3526,7 +3717,11 @@ body{margin:0;overflow:hidden;background-color:#6eb1ff;font-family:'Segoe UI','R
         let keys = {}, playerVY = 0, playerGrounded = true, pitch = 0;
         let playerVelocity = new THREE.Vector3(0, 0, 0);
         window.onkeydown = (e) => {
-            if(!gameStarted) return;
+            if(e.code === 'Escape') {
+                if(gameStarted) { gamePaused ? closePauseMenu() : openPauseMenu(); }
+                return;
+            }
+            if(!gameStarted || gamePaused) return;
             keys[e.code] = true;
             if(e.code==='Digit1') { activeSlot=1; bowCharging=false; updateInventoryUI(); updateHeldWeapon(); updateAmmoDisplay(); }
             if(e.code==='Digit2') { activeSlot=2; updateInventoryUI(); updateHeldWeapon(); updateAmmoDisplay(); }
@@ -3534,7 +3729,7 @@ body{margin:0;overflow:hidden;background-color:#6eb1ff;font-family:'Segoe UI','R
             if(e.code==='Digit4') { activeSlot=4; bowCharging=false; updateInventoryUI(); updateHeldWeapon(); updateAmmoDisplay(); }
             if(e.code==='KeyR') reload();
         };
-        window.onkeyup = (e) => keys[e.code] = false;
+        window.onkeyup = (e) => { keys[e.code] = false; };
 
         function updateInventoryUI() {
             [1,2,3,4].forEach(n => document.getElementById('slot'+n).classList.toggle('slot--active', activeSlot===n));
@@ -3557,7 +3752,7 @@ body{margin:0;overflow:hidden;background-color:#6eb1ff;font-family:'Segoe UI','R
 
         document.addEventListener('mousedown', (e) => {
             if(!gameStarted) return;
-            if(upgradeScreenOpen || shopScreenOpen) return;
+            if(upgradeScreenOpen || shopScreenOpen || gamePaused) return;
 
             // Try to acquire pointer lock on any click (silently ignore failure)
             if(!pointerLocked) {
@@ -3580,7 +3775,7 @@ body{margin:0;overflow:hidden;background-color:#6eb1ff;font-family:'Segoe UI','R
         document.addEventListener('contextmenu', e => e.preventDefault());
 
         document.addEventListener('mousemove', (e) => {
-            if(!gameStarted) return;
+            if(!gameStarted || gamePaused) return;
             const sens = 0.002;
             // Use movement from pointer lock OR from drag delta
             const dx = (pointerLocked || isDragging) ? e.movementX : 0;
@@ -3670,7 +3865,7 @@ body{margin:0;overflow:hidden;background-color:#6eb1ff;font-family:'Segoe UI','R
 
         function animate() {
             requestAnimationFrame(animate);
-            if(!gameStarted) { renderer.render(scene, camera); return; }
+            if(!gameStarted || gamePaused) { renderer.render(scene, camera); return; }
             
             updateDayNightCycle();
             animateClouds();
