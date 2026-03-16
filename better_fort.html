@@ -329,10 +329,42 @@ body{margin:0;overflow:hidden;background-color:#6eb1ff;font-family:'Segoe UI','R
           </div>
         </div>
 
+        <!-- Debug panel — hidden until unlocked -->
+        <div id="debug-panel" style="display:none;margin-bottom:18px;background:rgba(255,0,80,0.1);border:2px solid rgba(255,0,80,0.5);border-radius:14px;padding:16px 20px;">
+          <div style="color:#ff4466;font-size:13px;font-weight:900;letter-spacing:2px;margin-bottom:12px;text-align:center;">🛠️ DEBUG MODE</div>
+          <div style="display:flex;align-items:center;gap:12px;justify-content:center;flex-wrap:wrap;">
+            <label style="color:rgba(255,255,255,0.8);font-size:13px;font-weight:700;">Start on Wave:</label>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <button onclick="document.getElementById('debug-wave').value=Math.max(1,parseInt(document.getElementById('debug-wave').value||1)-1)" style="width:28px;height:28px;border-radius:6px;border:1px solid rgba(255,255,255,0.3);background:rgba(0,0,0,0.4);color:#fff;font-size:16px;cursor:pointer;line-height:1;">−</button>
+              <input id="debug-wave" type="number" min="1" max="100" value="1" style="width:60px;text-align:center;background:rgba(0,0,0,0.5);border:1px solid rgba(255,0,80,0.4);border-radius:8px;color:#ff4466;font-size:18px;font-weight:900;padding:4px 6px;font-family:'Arial Black',sans-serif;">
+              <button onclick="document.getElementById('debug-wave').value=Math.min(100,parseInt(document.getElementById('debug-wave').value||1)+1)" style="width:28px;height:28px;border-radius:6px;border:1px solid rgba(255,255,255,0.3);background:rgba(0,0,0,0.4);color:#fff;font-size:16px;cursor:pointer;line-height:1;">+</button>
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;">
+              <button onclick="document.getElementById('debug-wave').value=1"  style="padding:4px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);background:rgba(0,0,0,0.3);color:rgba(255,255,255,0.6);font-size:11px;cursor:pointer;">W1</button>
+              <button onclick="document.getElementById('debug-wave').value=5"  style="padding:4px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);background:rgba(0,0,0,0.3);color:rgba(255,255,255,0.6);font-size:11px;cursor:pointer;">W5</button>
+              <button onclick="document.getElementById('debug-wave').value=10" style="padding:4px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);background:rgba(0,0,0,0.3);color:rgba(255,255,255,0.6);font-size:11px;cursor:pointer;">W10</button>
+              <button onclick="document.getElementById('debug-wave').value=15" style="padding:4px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);background:rgba(0,0,0,0.3);color:rgba(255,255,255,0.6);font-size:11px;cursor:pointer;">W15</button>
+              <button onclick="document.getElementById('debug-wave').value=20" style="padding:4px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);background:rgba(0,0,0,0.3);color:rgba(255,255,255,0.6);font-size:11px;cursor:pointer;">W20</button>
+              <button onclick="document.getElementById('debug-wave').value=25" style="padding:4px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);background:rgba(0,0,0,0.3);color:rgba(255,255,255,0.6);font-size:11px;cursor:pointer;">W25</button>
+            </div>
+          </div>
+        </div>
+
         <div style="text-align:center;">
           <button id="start-button" class="btn">▶ PLAY</button>
         </div>
       </div>
+    </div>
+
+    <!-- Code entry — fixed bottom-right corner, always visible on start screen -->
+    <div id="code-entry-overlay" style="position:fixed;bottom:20px;right:24px;z-index:1100;text-align:right;">
+      <div style="color:rgba(255,255,255,0.55);font-size:11px;letter-spacing:1px;margin-bottom:5px;">🔑 HAVE A CODE?</div>
+      <input id="code-input" type="password" maxlength="12" placeholder="Enter code..."
+        style="background:rgba(0,0,0,0.55);border:2px solid rgba(255,255,255,0.35);border-radius:10px;
+               color:#fff;font-size:13px;padding:7px 14px;text-align:center;
+               outline:none;width:160px;letter-spacing:3px;transition:border-color 0.2s,box-shadow 0.2s;
+               font-family:'Arial Black',sans-serif;">
+      <div id="code-feedback" style="color:rgba(255,255,255,0.5);font-size:11px;margin-top:4px;height:14px;text-align:center;"></div>
     </div>
 
     <!-- Game Over + Skill Tree Screen -->
@@ -956,7 +988,41 @@ body{margin:0;overflow:hidden;background-color:#6eb1ff;font-family:'Segoe UI','R
             fireRateBonus: 0,
             bowChargeSpeedBonus: 0,
             rangeBonus: 0,
+            // Weapon attachments from chests
+            knifeAttachment: null,   // 'serrated' | 'hollow'
+            bowAttachment: null,     // 'explosive' | 'fire'
+            spearAttachment: null,   // 'heavy'
+            axeAttachment: null,     // 'cursed'
         };
+
+        // Passive aura state — levels stack (each upgrade pick adds 1 rank)
+        const passiveAuras = {
+            fireRing:    0,   // 🔥 Ring of Fire
+            frostAura:   0,   // ❄️ Frost Aura
+            staticField: 0,   // ⚡ Static Field
+            thorns:      0,   // 🩸 Thorns
+        };
+        // Runtime aura meshes attached to player (created on first rank)
+        const auraMeshes = {};
+        let staticFieldTimer = 0;
+
+        // ── World chests ─────────────────────────────────────────────────────
+        const worldChests = [];
+
+        const CHEST_ATTACHMENTS = [
+            { id: 'serrated',  weapon: 'knife', icon: '🗡️',  name: 'Serrated Blade',   desc: 'Knives inflict bleeding — +40% damage',         color: 0xff2222,
+              apply() { playerUpgrades.knifeAttachment = 'serrated'; playerUpgrades.knifeDamageBonus += 40; } },
+            { id: 'hollow',    weapon: 'knife', icon: '💀',  name: 'Hollow Points',    desc: 'Knives pierce through enemies — +1 pierce',      color: 0xaa44ff,
+              apply() { playerUpgrades.knifeAttachment = 'hollow'; playerUpgrades.knifePierce = (playerUpgrades.knifePierce || 0) + 1; } },
+            { id: 'explosive', weapon: 'bow',   icon: '💥',  name: 'Explosive Tips',   desc: 'Arrows explode on impact — AoE damage',          color: 0xff8800,
+              apply() { playerUpgrades.bowAttachment = 'explosive'; } },
+            { id: 'fire',      weapon: 'bow',   icon: '🔥',  name: 'Fire Arrows',      desc: 'Arrows ignite enemies — deals 5 DPS for 3s',     color: 0xff4400,
+              apply() { playerUpgrades.bowAttachment = 'fire'; } },
+            { id: 'heavy',     weapon: 'spear', icon: '🔱',  name: 'Heavy Spearhead',  desc: 'Spears deal +60% damage and knock back enemies', color: 0x4488ff,
+              apply() { playerUpgrades.spearAttachment = 'heavy'; playerUpgrades.spearDamageBonus += 60; } },
+            { id: 'cursed',    weapon: 'axe',   icon: '☠️',  name: 'Cursed Edge',      desc: 'Axe hits curse enemies — they take +30% damage', color: 0x882299,
+              apply() { playerUpgrades.axeAttachment = 'cursed'; playerUpgrades.axeDamageBonus += 55; } },
+        ];
 
         // Track upgrade history for the tracker HUD
         const upgradeHistory = [];
@@ -1126,6 +1192,69 @@ body{margin:0;overflow:hidden;background-color:#6eb1ff;font-family:'Segoe UI','R
                     maxMagSize += variant.bonus;
                     currentAmmo = Math.min(currentAmmo + variant.bonus, maxMagSize);
                     updateAmmoDisplay();
+                }
+            },
+            // ---- PASSIVE AURAS ----
+            {
+                type: 'aura',
+                icon: '🔥',
+                name: 'Ring of Fire',
+                applies: 'Passive',
+                getVariant() {
+                    const r = rollRarity();
+                    const dps = { common: 3, uncommon: 6, rare: 10, epic: 16, legendary: 25 }[r];
+                    const radius = { common: 2.5, uncommon: 3, rare: 3.8, epic: 4.8, legendary: 6 }[r];
+                    return { rarity: r, dps, radius, desc: `A ring of flames surrounds you, burning any capybara that gets close.`, bonusText: `${dps} DPS · ${radius}m radius` };
+                },
+                apply(variant) {
+                    passiveAuras.fireRing++;
+                    initAuraMesh('fireRing');
+                }
+            },
+            {
+                type: 'aura',
+                icon: '❄️',
+                name: 'Frost Aura',
+                applies: 'Passive',
+                getVariant() {
+                    const r = rollRarity();
+                    const slow = { common: 20, uncommon: 30, rare: 42, epic: 55, legendary: 70 }[r];
+                    const radius = { common: 3, uncommon: 4, rare: 5.5, epic: 7, legendary: 9 }[r];
+                    return { rarity: r, slow, radius, desc: `A chilling field slows all nearby capybaras.`, bonusText: `-${slow}% Speed · ${radius}m radius` };
+                },
+                apply(variant) {
+                    passiveAuras.frostAura++;
+                    initAuraMesh('frostAura');
+                }
+            },
+            {
+                type: 'aura',
+                icon: '⚡',
+                name: 'Static Field',
+                applies: 'Passive',
+                getVariant() {
+                    const r = rollRarity();
+                    const dmg = { common: 15, uncommon: 28, rare: 45, epic: 70, legendary: 110 }[r];
+                    const interval = { common: 2.5, uncommon: 2.0, rare: 1.5, epic: 1.1, legendary: 0.7 }[r];
+                    return { rarity: r, dmg, interval, desc: `Zaps the nearest capybara with lightning at regular intervals.`, bonusText: `${dmg} dmg every ${interval}s` };
+                },
+                apply(variant) {
+                    passiveAuras.staticField++;
+                    initAuraMesh('staticField');
+                }
+            },
+            {
+                type: 'aura',
+                icon: '🩸',
+                name: 'Thorns',
+                applies: 'Passive',
+                getVariant() {
+                    const r = rollRarity();
+                    const pct = { common: 25, uncommon: 40, rare: 60, epic: 85, legendary: 120 }[r];
+                    return { rarity: r, pct, desc: `Reflects a portion of melee damage back at attackers.`, bonusText: `${pct}% damage reflected` };
+                },
+                apply(variant) {
+                    passiveAuras.thorns++;
                 }
             },
         ];
@@ -1661,6 +1790,7 @@ body{margin:0;overflow:hidden;background-color:#6eb1ff;font-family:'Segoe UI','R
                 ctx.beginPath();
                 ctx.arc(mm.x, mm.y, r, 0, Math.PI * 2);
                 ctx.fillStyle = en.userData.isBoss     ? '#ff6600'
+                              : en.userData.enemyType === 'flying'  ? '#87ceeb'
                               : en.userData.enemyType === 'armored' ? '#aaaaff'
                               : en.userData.enemyType === 'healer'  ? '#00ee88'
                               : en.userData.enemyType === 'ranged'  ? '#ffcc44'
@@ -1683,6 +1813,17 @@ body{margin:0;overflow:hidden;background-color:#6eb1ff;font-family:'Segoe UI','R
                 ctx.arc(mm.x, mm.y, 3, 0, Math.PI * 2);
                 ctx.fillStyle = '#f1c40f';
                 ctx.fill();
+            }
+
+            // Draw chests as gold squares
+            for (const ch of worldChests) {
+                if (ch.userData.opened) continue;
+                const mm = worldToMM(ch.position.x, ch.position.z);
+                ctx.fillStyle = '#ffd700';
+                ctx.fillRect(mm.x - 3, mm.y - 3, 6, 6);
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 0.8;
+                ctx.strokeRect(mm.x - 3, mm.y - 3, 6, 6);
             }
 
             // Draw player — white arrow triangle pointing up (always center)
@@ -1782,75 +1923,14 @@ body{margin:0;overflow:hidden;background-color:#6eb1ff;font-family:'Segoe UI','R
         // =====================================================================
         // MUSIC SYSTEM — procedural calm / intense layers
         // =====================================================================
-        let musicState    = 'none'; // 'calm' | 'intense' | 'none'
+        let musicState    = 'none';
         let musicNodes    = [];
         let musicFadeTimer = null;
 
-        function stopMusic() {
-            musicNodes.forEach(n => {
-                try { n.gain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.4); setTimeout(() => { try { n.osc.stop(); } catch(e){} }, 600); } catch(e) {}
-            });
-            musicNodes = [];
-            musicState = 'none';
-        }
-
-        function startCalmMusic() {
-            if (musicState === 'calm') return;
-            stopMusic();
-            musicState = 'calm';
-            // Gentle ambient drone: 3 harmonically-related sine tones
-            const baseFreq = 110;
-            [[1, 0.018], [1.5, 0.012], [2, 0.008]].forEach(([mult, vol]) => {
-                const osc  = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.type = 'sine';
-                osc.frequency.value = baseFreq * mult;
-                gain.gain.setValueAtTime(0, audioCtx.currentTime);
-                gain.gain.linearRampToValueAtTime(vol, audioCtx.currentTime + 2.5);
-                osc.connect(gain); gain.connect(ambientMusicGain);
-                osc.start();
-                musicNodes.push({ osc, gain });
-            });
-            // Slow LFO-like frequency wobble via setInterval
-            const wobbleId = setInterval(() => {
-                if (musicState !== 'calm') { clearInterval(wobbleId); return; }
-                musicNodes.forEach((n, i) => {
-                    const base = 110 * [1, 1.5, 2][i] || 110;
-                    n.osc.frequency.setTargetAtTime(base + Math.sin(Date.now() * 0.0004) * 3, audioCtx.currentTime, 0.8);
-                });
-            }, 200);
-        }
-
-        function startIntenseMusic() {
-            if (musicState === 'intense') return;
-            stopMusic();
-            musicState = 'intense';
-            // Driving pulse: square wave bass + higher harmonic
-            const baseFreq = 110;
-            [[1, 'square', 0.022], [2, 'sawtooth', 0.012], [3, 'square', 0.007]].forEach(([mult, type, vol]) => {
-                const osc  = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.type = type;
-                osc.frequency.value = baseFreq * mult;
-                gain.gain.setValueAtTime(0, audioCtx.currentTime);
-                gain.gain.linearRampToValueAtTime(vol, audioCtx.currentTime + 1.2);
-                osc.connect(gain); gain.connect(ambientMusicGain);
-                osc.start();
-                musicNodes.push({ osc, gain });
-            });
-            // Rhythmic accent pulse every ~500ms
-            const rhythmId = setInterval(() => {
-                if (musicState !== 'intense') { clearInterval(rhythmId); return; }
-                playSound(55, 0.08, 'square', 0.025);
-            }, 500);
-        }
-
-        // Called from waveComplete and enemy spawning
-        function setMusicForState(state) {
-            if (state === 'calm')   { clearTimeout(musicFadeTimer); musicFadeTimer = setTimeout(startCalmMusic,  400); }
-            if (state === 'intense') { clearTimeout(musicFadeTimer); musicFadeTimer = setTimeout(startIntenseMusic, 200); }
-            if (state === 'stop')   { clearTimeout(musicFadeTimer); stopMusic(); }
-        }
+        function stopMusic() {}
+        function startCalmMusic() {}
+        function startIntenseMusic() {}
+        function setMusicForState(state) {}
 
         // =====================================================================
         // ACHIEVEMENT SYSTEM
@@ -2414,6 +2494,13 @@ body{margin:0;overflow:hidden;background-color:#6eb1ff;font-family:'Segoe UI','R
                 }
             }
 
+            // Chests — ~1 per 3 chunks, not too close to origin
+            if(pr(90) < 0.33 && Math.sqrt((chunkX*chunkSize)*(chunkX*chunkSize) + (chunkZ*chunkSize)*(chunkZ*chunkSize)) > 15) {
+                const cx = chunkX * chunkSize + pr(91) * (chunkSize - 4) + 2;
+                const cz = chunkZ * chunkSize + pr(92) * (chunkSize - 4) + 2;
+                chunk.chestRef = spawnChest(cx, cz);
+            }
+
             terrainChunks.set(chunkKey, chunk);
         }
 
@@ -2784,6 +2871,12 @@ body{margin:0;overflow:hidden;background-color:#6eb1ff;font-family:'Segoe UI','R
                 const wi = waterZonesList.indexOf(zone);
                 if(wi > -1) waterZonesList.splice(wi, 1);
             });
+            // Remove chest if still present
+            if (chunk.chestRef && !chunk.chestRef.userData.opened) {
+                scene.remove(chunk.chestRef);
+                const ci = worldChests.indexOf(chunk.chestRef);
+                if (ci > -1) worldChests.splice(ci, 1);
+            }
             terrainChunks.delete(key);
         }
         
@@ -2856,6 +2949,20 @@ body{margin:0;overflow:hidden;background-color:#6eb1ff;font-family:'Segoe UI','R
             bll.position.set(-0.4,0.25,-0.5); bll.castShadow=true; character.add(bll); character.userData.backLegLeft=bll;
             const blr = new THREE.Mesh(new THREE.BoxGeometry(0.25,0.5,0.25), legMat);
             blr.position.set(0.4,0.25,-0.5); blr.castShadow=true; character.add(blr); character.userData.backLegRight=blr;
+
+            // ── Army helmet ───────────────────────────────────────────────
+            const helmetMat = new THREE.MeshStandardMaterial({ color: 0x4a5e2a, roughness: 0.7, metalness: 0.3 });
+            // Main dome — flattened sphere sitting on top of head
+            const dome = new THREE.Mesh(new THREE.SphereGeometry(0.42, 10, 8, 0, Math.PI * 2, 0, Math.PI * 0.55), helmetMat);
+            dome.position.set(0, 1.01, 1.0);
+            dome.castShadow = true;
+            character.add(dome);
+            // Brim — flat disc around the base of the dome
+            const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.50, 0.52, 0.06, 14), helmetMat);
+            brim.position.set(0, 0.88, 1.0);
+            character.add(brim);
+            character.userData.helmet = dome;
+
             character.scale.setScalar(scale);
             character.castShadow = true; character.receiveShadow = true;
             character.userData.animTime = 0; character.userData.vY = 0;
@@ -2870,7 +2977,7 @@ body{margin:0;overflow:hidden;background-color:#6eb1ff;font-family:'Segoe UI','R
             e.userData.enemyType = 'scout';
             e.userData.health = 35; e.userData.maxHealth = 35;
             e.userData.speed = 0.10;
-            e.userData.attackRange = 1.0; e.userData.attackCooldown = 800;
+            e.userData.attackRange = 1.0; e.userData.attackCooldown = 450;
             e.userData.attackDamage = 8;
             e.userData.jumpCooldown = 4000; e.userData.lastJump = 0;
             return e;
@@ -2881,7 +2988,7 @@ body{margin:0;overflow:hidden;background-color:#6eb1ff;font-family:'Segoe UI','R
             e.userData.enemyType = 'normal';
             e.userData.health = 100; e.userData.maxHealth = 100;
             e.userData.speed = 0.04;
-            e.userData.attackRange = 1.2; e.userData.attackCooldown = 1000;
+            e.userData.attackRange = 1.2; e.userData.attackCooldown = 550;
             e.userData.attackDamage = 20;
             return e;
         }
@@ -2895,7 +3002,7 @@ body{margin:0;overflow:hidden;background-color:#6eb1ff;font-family:'Segoe UI','R
             e.userData.enemyType = 'tank';
             e.userData.health = 335; e.userData.maxHealth = 335;
             e.userData.speed = 0.022;
-            e.userData.attackRange = 2.0; e.userData.attackCooldown = 1400;
+            e.userData.attackRange = 2.0; e.userData.attackCooldown = 750;
             e.userData.attackDamage = 35;
             return e;
         }
@@ -2929,10 +3036,10 @@ body{margin:0;overflow:hidden;background-color:#6eb1ff;font-family:'Segoe UI','R
             e.userData.enemyType = 'spitter';
             e.userData.health = 80; e.userData.maxHealth = 80;
             e.userData.speed = 0.03;
-            e.userData.attackRange = 1.2; e.userData.attackCooldown = 1200;
+            e.userData.attackRange = 1.2; e.userData.attackCooldown = 650;
             e.userData.attackDamage = 10;
             e.userData.spitRange = 18;     // max spit distance
-            e.userData.spitCooldown = 2800;
+            e.userData.spitCooldown = 1600;
             e.userData.lastSpit = 0;
             e.userData.preferredDistance = 12; // tries to stay away
             return e;
@@ -2951,7 +3058,7 @@ body{margin:0;overflow:hidden;background-color:#6eb1ff;font-family:'Segoe UI','R
             e.userData.enemyType   = 'armored';
             e.userData.health      = 220; e.userData.maxHealth = 220;
             e.userData.speed       = 0.033;
-            e.userData.attackRange = 1.4; e.userData.attackCooldown = 1100;
+            e.userData.attackRange = 1.4; e.userData.attackCooldown = 600;
             e.userData.attackDamage= 28;
             e.userData.armorAngle  = Math.PI; // front arc (radians half-angle)
             return e;
@@ -2970,7 +3077,7 @@ body{margin:0;overflow:hidden;background-color:#6eb1ff;font-family:'Segoe UI','R
             e.userData.attackDamage  = 0;
             e.userData.preferredDistance = 14;
             e.userData.throwRange    = 18;
-            e.userData.throwCooldown = 2200;
+            e.userData.throwCooldown = 1200;
             e.userData.lastThrow     = 0;
             return e;
         }
@@ -3009,12 +3116,19 @@ body{margin:0;overflow:hidden;background-color:#6eb1ff;font-family:'Segoe UI','R
             en.getWorldPosition(worldPos);
             worldPos.y += 0.8;
             mudGroup.position.copy(worldPos);
-            const dir = new THREE.Vector3().subVectors(player.position, worldPos);
-            dir.y += 0.2;
-            dir.normalize();
-            mudGroup.userData.velocity = dir.multiplyScalar(0.7);
-            mudGroup.userData.gravity  = -0.006;
-            mudGroup.userData.life     = 160;
+            const speed = 0.55;
+            const gravity = -0.008;
+            // Aim at player center, compensate for gravity drop based on travel time
+            const target = player.position.clone().add(new THREE.Vector3(0, 1.0, 0));
+            const toTarget = new THREE.Vector3().subVectors(target, worldPos);
+            const dxz = Math.sqrt(toTarget.x * toTarget.x + toTarget.z * toTarget.z);
+            const travelFrames = dxz / speed;
+            const gravDrop = 0.5 * Math.abs(gravity) * travelFrames * travelFrames;
+            toTarget.y += gravDrop;
+            toTarget.normalize();
+            mudGroup.userData.velocity = toTarget.multiplyScalar(speed);
+            mudGroup.userData.gravity  = gravity;
+            mudGroup.userData.life     = Math.ceil(travelFrames * 1.4) + 30;
             mudGroup.userData.damage   = 12;
             scene.add(mudGroup);
             enemyProjectiles.push(mudGroup);
@@ -3036,14 +3150,78 @@ body{margin:0;overflow:hidden;background-color:#6eb1ff;font-family:'Segoe UI','R
             e.userData.enemyType    = 'boss';
             e.userData.health       = 1500; e.userData.maxHealth = 1500;
             e.userData.speed        = 0.035; e.userData._baseSpeed = 0.035;
-            e.userData.attackRange  = 2.5; e.userData.attackCooldown = 900;
+            e.userData.attackRange  = 2.5; e.userData.attackCooldown = 500;
             e.userData.attackDamage = 40;
             e.userData.spitRange    = 25;
-            e.userData.spitCooldown = 1800;
+            e.userData.spitCooldown = 1000;
             e.userData.lastSpit     = 0;
             e.userData.jumpCooldown = 5000; e.userData.lastJump = 0;
             e.userData.isBoss       = true;
             e.userData.phase        = 1;
+            return e;
+        }
+
+        function createFlying() {
+            const e = buildCapybaraMesh(0x87ceeb, 0x4a90d9, 0.85); // sky-blue tint, slightly smaller
+            e.userData.enemyType = 'flying';
+            e.userData.health = 65; e.userData.maxHealth = 65;
+            e.userData.speed = 0.06;
+            e.userData.attackRange = 2.2; e.userData.attackCooldown = 600;
+            e.userData.attackDamage = 18;
+            e.userData.isFlying = true;
+            e.userData.flyHeight = 3.5 + Math.random() * 1.5;
+            e.userData.flyBobTime = Math.random() * Math.PI * 2;
+            e.userData.flyBobSpeed = 0.025 + Math.random() * 0.02;
+            e.userData.flyBobAmp = 0.35;
+            e.userData.vY = 0;
+
+            // ── Replace army helmet with pilot helmet ─────────────────────
+            // Remove the army helmet pieces added by buildCapybaraMesh
+            if (e.userData.helmet) {
+                // Remove dome and brim (last 2 children added)
+                const toRemove = e.children.filter(c => c.isMesh && c.geometry &&
+                    (c.geometry.type === 'SphereGeometry' || c.geometry.type === 'CylinderGeometry') &&
+                    c !== e.children[0] && c.position.z > 0.8);
+                toRemove.forEach(c => e.remove(c));
+            }
+            // Pilot helmet — smooth rounded cap, white/cream colour
+            const pilotMat = new THREE.MeshStandardMaterial({ color: 0xf0f0e8, roughness: 0.4, metalness: 0.15 });
+            const pilotDome = new THREE.Mesh(new THREE.SphereGeometry(0.44, 10, 8, 0, Math.PI * 2, 0, Math.PI * 0.6), pilotMat);
+            pilotDome.position.set(0, 1.03, 1.0);
+            pilotDome.castShadow = true;
+            e.add(pilotDome);
+            // Chin strap — two thin dark boxes
+            const strapMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.9 });
+            const strapL = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.28, 0.05), strapMat);
+            strapL.position.set(-0.3, 0.78, 1.15);
+            e.add(strapL);
+            const strapR = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.28, 0.05), strapMat);
+            strapR.position.set(0.3, 0.78, 1.15);
+            e.add(strapR);
+            // Visor — dark tinted curved panel in front
+            const visorMat = new THREE.MeshStandardMaterial({ color: 0x1a3a5c, roughness: 0.1, metalness: 0.6, transparent: true, opacity: 0.85 });
+            const visor = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.22, 0.06), visorMat);
+            visor.position.set(0, 0.88, 1.38);
+            visor.rotation.x = -0.18;
+            e.add(visor);
+            // Visor frame
+            const frameMat = new THREE.MeshStandardMaterial({ color: 0x888880, roughness: 0.4, metalness: 0.7 });
+            const frame = new THREE.Mesh(new THREE.BoxGeometry(0.68, 0.27, 0.04), frameMat);
+            frame.position.set(0, 0.88, 1.36);
+            frame.rotation.x = -0.18;
+            e.add(frame);
+            // Oxygen mask nub
+            const maskMat = new THREE.MeshStandardMaterial({ color: 0x444444, roughness: 0.8 });
+            const mask = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.16, 0.1), maskMat);
+            mask.position.set(0, 0.68, 1.38);
+            e.add(mask);
+
+            // Wings — two flat boxes, rotation animated in the AI loop
+            const wingMat = new THREE.MeshStandardMaterial({ color: 0xaaddff, transparent: true, opacity: 0.82, roughness: 0.4 });
+            const wingL = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.06, 0.55), wingMat);
+            wingL.position.set(-0.9, 0.45, 0); e.add(wingL); e.userData.wingLeft = wingL;
+            const wingR = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.06, 0.55), wingMat);
+            wingR.position.set(0.9, 0.45, 0); e.add(wingR); e.userData.wingRight = wingR;
             return e;
         }
 
@@ -3057,6 +3235,11 @@ body{margin:0;overflow:hidden;background-color:#6eb1ff;font-family:'Segoe UI','R
             }
             const roll = Math.random();
             const w = currentWave;
+            // Flying capybaras: wave 10+, 8–12% spawn chance (skip on swarm/boss waves)
+            if(w >= 10 && !forceSwarm) {
+                const flyThreshold = 0.08 + Math.random() * 0.04; // 8–12%
+                if(Math.random() < flyThreshold) return createFlying();
+            }
             // Swarm enemies are fast, weak scouts
             if(forceSwarm) {
                 const e = createScout();
@@ -3086,12 +3269,19 @@ body{margin:0;overflow:hidden;background-color:#6eb1ff;font-family:'Segoe UI','R
             en.getWorldPosition(worldPos);
             worldPos.y += 0.7 * en.scale.y;
             spitGroup.position.copy(worldPos);
-            const dir = new THREE.Vector3().subVectors(player.position, worldPos);
-            dir.y += 0.15; // slight arc
-            dir.normalize();
-            spitGroup.userData.velocity = dir.multiplyScalar(0.9);
-            spitGroup.userData.gravity = -0.003;
-            spitGroup.userData.life = 180;
+            const speed = en.userData.isBoss ? 0.75 : 0.55;
+            const gravity = -0.006;
+            // Aim at player center, compensate for gravity drop based on travel time
+            const target = player.position.clone().add(new THREE.Vector3(0, 1.0, 0));
+            const toTarget = new THREE.Vector3().subVectors(target, worldPos);
+            const dxz = Math.sqrt(toTarget.x * toTarget.x + toTarget.z * toTarget.z);
+            const travelFrames = dxz / speed;
+            const gravDrop = 0.5 * Math.abs(gravity) * travelFrames * travelFrames;
+            toTarget.y += gravDrop;
+            toTarget.normalize();
+            spitGroup.userData.velocity = toTarget.multiplyScalar(speed);
+            spitGroup.userData.gravity = gravity;
+            spitGroup.userData.life = Math.ceil(travelFrames * 1.4) + 30;
             spitGroup.userData.damage = en.userData.isBoss ? 18 : 10;
             scene.add(spitGroup);
             enemyProjectiles.push(spitGroup);
@@ -3250,7 +3440,7 @@ body{margin:0;overflow:hidden;background-color:#6eb1ff;font-family:'Segoe UI','R
 
         function spawnEnemy(forceSwarm) {
             const e = createEnemyForWave(forceSwarm);
-            e.position.set(Math.random()*60-30, 0, Math.random()*60-30);
+            e.position.set(Math.random()*60-30, e.userData.isFlying ? e.userData.flyHeight : 0, Math.random()*60-30);
             scene.add(e);
             const hBar = createHealthBar(false);
             e.userData.healthBarElement = hBar.container;
@@ -3267,7 +3457,7 @@ body{margin:0;overflow:hidden;background-color:#6eb1ff;font-family:'Segoe UI','R
             const e = createEnemyForWave();
             const angle = Math.random() * Math.PI * 2;
             const dist = 50 + Math.random() * 70;
-            e.position.set(player.position.x + Math.cos(angle)*dist, 0, player.position.z + Math.sin(angle)*dist);
+            e.position.set(player.position.x + Math.cos(angle)*dist, e.userData.isFlying ? e.userData.flyHeight : 0, player.position.z + Math.sin(angle)*dist);
             scene.add(e);
             const hBar = createHealthBar(false);
             e.userData.healthBarElement = hBar.container;
@@ -3370,6 +3560,8 @@ body{margin:0;overflow:hidden;background-color:#6eb1ff;font-family:'Segoe UI','R
             arrowGroup.userData.rotationSpeed = 0;
             arrowGroup.userData.damage = Math.round(damage);
             arrowGroup.userData.gravity = -0.015;
+            arrowGroup.userData.weaponType = 'arrow';
+            arrowGroup.userData.attachment = playerUpgrades.bowAttachment;
             scene.add(arrowGroup);
             bullets.push(arrowGroup);
         }
@@ -3790,6 +3982,8 @@ body{margin:0;overflow:hidden;background-color:#6eb1ff;font-family:'Segoe UI','R
         function launchGame() {
             document.getElementById('start-screen').classList.add('u-hidden');
             document.getElementById('hud-root').style.display = 'block';
+            const codeOverlay = document.getElementById('code-entry-overlay');
+            if (codeOverlay) codeOverlay.style.display = 'none';
             gameStarted = true;
             audioCtx.resume();
             // Request pointer lock — if it fails controls still work via right-drag
@@ -3806,6 +4000,33 @@ body{margin:0;overflow:hidden;background-color:#6eb1ff;font-family:'Segoe UI','R
             setMusicForState('intense');
             applySkinToPlayer();
             applyWeaponSkin();
+
+            // Debug mode: jump to chosen wave
+            if (debugMode) {
+                const startWave = Math.max(1, parseInt(document.getElementById('debug-wave').value) || 1);
+                if (startWave > 1) {
+                    // Remove all existing enemies that were spawned for wave 1
+                    enemies.forEach(en => {
+                        scene.remove(en);
+                        if (en.userData.healthBarElement) en.userData.healthBarElement.remove();
+                    });
+                    enemies.length = 0;
+                    enemiesKilledThisWave = 0;
+
+                    // Set wave state
+                    currentWave = startWave;
+                    const dm = getDifficultyMult();
+                    enemiesInWave = Math.max(3, Math.round((5 + (currentWave - 1) * 2) * dm.enemyCountMult));
+                    window._bossSpawnedThisWave = false;
+
+                    // Spawn the correct enemies for this wave
+                    for (let i = 0; i < enemiesInWave; i++) spawnEnemy();
+
+                    document.getElementById('wave-counter').innerText = `WAVE: ${currentWave}`;
+                    document.getElementById('enemies-remaining').innerText = `ENEMIES: ${enemiesInWave}`;
+                    showFlashMessage(`🛠️ DEBUG — Wave ${currentWave}`, '#ff4466');
+                }
+            }
 
             // Show control hint if pointer lock isn't available
             setTimeout(() => {
@@ -3850,6 +4071,39 @@ body{margin:0;overflow:hidden;background-color:#6eb1ff;font-family:'Segoe UI','R
 
         function getDifficultyMult() { return DIFFICULTIES[activeDifficulty] || DIFFICULTIES.normal; }
 
+        // =====================================================================
+        // DEBUG MODE — unlock with code 022413
+        // =====================================================================
+        let debugMode = false;
+
+        (function initCodeInput() {
+            const input    = document.getElementById('code-input');
+            const feedback = document.getElementById('code-feedback');
+            const panel    = document.getElementById('debug-panel');
+            if (!input) return;
+
+            input.addEventListener('input', () => {
+                const val = input.value.trim();
+                if (val === '022413') {
+                    debugMode = true;
+                    input.style.borderColor = '#ff4466';
+                    input.style.color = '#ff4466';
+                    feedback.style.color = '#ff4466';
+                    feedback.textContent = '🛠️ Debug mode unlocked!';
+                    panel.style.display = 'block';
+                    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                } else if (debugMode && val !== '022413') {
+                    // They cleared/changed it — lock again
+                    debugMode = false;
+                    input.style.borderColor = 'rgba(255,255,255,0.1)';
+                    input.style.color = 'rgba(255,255,255,0.4)';
+                    feedback.style.color = 'rgba(255,255,255,0.3)';
+                    feedback.textContent = '';
+                    panel.style.display = 'none';
+                }
+            });
+        })();
+
         document.getElementById('start-button').addEventListener('click', () => launchGame());
 
         function updateUIHealthBar(mesh, offsetY = 2.2) {
@@ -3861,6 +4115,267 @@ body{margin:0;overflow:hidden;background-color:#6eb1ff;font-family:'Segoe UI','R
             mesh.userData.healthBarElement.style.left = (pos.x * 0.5 + 0.5) * window.innerWidth + 'px';
             mesh.userData.healthBarElement.style.top = (-pos.y * 0.5 + 0.5) * window.innerHeight + 'px';
             mesh.userData.healthBarElement.style.display = (pos.z > 1 || (mesh.userData.health >= mesh.userData.maxHealth && mesh.userData.type==='wall')) ? 'none' : 'block';
+        }
+
+        // =====================================================================
+        // PASSIVE AURA ENGINE
+        // =====================================================================
+        function initAuraMesh(type) {
+            if (auraMeshes[type]) return; // already created
+            if (type === 'fireRing') {
+                const ring = new THREE.Mesh(
+                    new THREE.TorusGeometry(2.8, 0.12, 8, 48),
+                    new THREE.MeshStandardMaterial({ color: 0xff4400, emissive: 0xff2200, emissiveIntensity: 1.2, transparent: true, opacity: 0.85 })
+                );
+                ring.rotation.x = Math.PI / 2;
+                player.add(ring);
+                auraMeshes.fireRing = ring;
+                // Inner fire particles placeholder (visual extras)
+                const innerGlow = new THREE.Mesh(
+                    new THREE.TorusGeometry(2.8, 0.35, 6, 48),
+                    new THREE.MeshStandardMaterial({ color: 0xff8800, emissive: 0xff6600, emissiveIntensity: 0.5, transparent: true, opacity: 0.3 })
+                );
+                innerGlow.rotation.x = Math.PI / 2;
+                player.add(innerGlow);
+                auraMeshes.fireRingGlow = innerGlow;
+            }
+            if (type === 'frostAura') {
+                const ring = new THREE.Mesh(
+                    new THREE.TorusGeometry(4.5, 0.1, 8, 56),
+                    new THREE.MeshStandardMaterial({ color: 0x88ddff, emissive: 0x44aaff, emissiveIntensity: 0.9, transparent: true, opacity: 0.7 })
+                );
+                ring.rotation.x = Math.PI / 2;
+                player.add(ring);
+                auraMeshes.frostAura = ring;
+            }
+            if (type === 'staticField') {
+                const ring = new THREE.Mesh(
+                    new THREE.TorusGeometry(1.8, 0.08, 6, 36),
+                    new THREE.MeshStandardMaterial({ color: 0xffff44, emissive: 0xeeee00, emissiveIntensity: 1.4, transparent: true, opacity: 0.9 })
+                );
+                ring.rotation.x = Math.PI / 2;
+                player.add(ring);
+                auraMeshes.staticField = ring;
+            }
+        }
+
+        let _lastAuraTime = 0;
+        let _lastStaticZap = 0;
+
+        function updatePassiveAuras() {
+            if (!gameStarted) return;
+            const now = Date.now();
+            const dt = now - _lastAuraTime;
+            _lastAuraTime = now;
+
+            // --- Ring of Fire ---
+            if (passiveAuras.fireRing > 0) {
+                const rank = passiveAuras.fireRing;
+                const radius = 2.5 + rank * 0.5;
+                const dps    = 3 + rank * 3;
+                // Animate ring pulse
+                if (auraMeshes.fireRing) {
+                    const s = 1 + Math.sin(now * 0.004) * 0.06;
+                    auraMeshes.fireRing.scale.set(s, s, 1);
+                    auraMeshes.fireRing.material.emissiveIntensity = 0.9 + Math.sin(now * 0.007) * 0.4;
+                }
+                if (auraMeshes.fireRingGlow) {
+                    auraMeshes.fireRingGlow.rotation.z += 0.012;
+                    auraMeshes.fireRingGlow.material.opacity = 0.15 + Math.sin(now * 0.005) * 0.1;
+                }
+                // Damage nearby enemies
+                enemies.forEach(en => {
+                    const d = player.position.distanceTo(en.position);
+                    if (d < radius) {
+                        const dmg = (dps * dt) / 1000;
+                        en.userData.health -= dmg;
+                        if (en.userData.healthBarFill) {
+                            en.userData.healthBarFill.style.width = Math.max(0, en.userData.health / en.userData.maxHealth * 100) + '%';
+                        }
+                        if (en.userData.health <= 0) killEnemy(en);
+                        // Occasional fire particle
+                        if (Math.random() < 0.04) {
+                            spawnParticles(en.position.clone().add(new THREE.Vector3((Math.random()-0.5)*0.5, 0.8, (Math.random()-0.5)*0.5)), 2,
+                                { color: 0xff4400, size: 0.1, speed: 0.07, life: 14, explode: true });
+                        }
+                    }
+                });
+            }
+
+            // --- Frost Aura ---
+            if (passiveAuras.frostAura > 0) {
+                const rank   = passiveAuras.frostAura;
+                const radius = 3 + rank * 1.2;
+                const slow   = 0.2 + rank * 0.1;
+                if (auraMeshes.frostAura) {
+                    auraMeshes.frostAura.rotation.z += 0.008;
+                    const s = 1 + Math.sin(now * 0.003) * 0.04;
+                    auraMeshes.frostAura.scale.set(s, s, 1);
+                }
+                enemies.forEach(en => {
+                    const d = player.position.distanceTo(en.position);
+                    const inRange = d < radius;
+                    if (inRange && !en.userData._frosted) {
+                        en.userData._frosted = true;
+                        en.userData._origSpeed = en.userData._origSpeed || en.userData.speed;
+                        en.userData.speed = en.userData._origSpeed * (1 - slow);
+                        // Blue tint
+                        en.traverse(c => { if (c.isMesh && c.material) { c.userData._origColor = c.userData._origColor || c.material.color.getHex(); c.material.color.setHex(0x88ccff); } });
+                    } else if (!inRange && en.userData._frosted) {
+                        en.userData._frosted = false;
+                        en.userData.speed = en.userData._origSpeed || en.userData.speed;
+                        en.traverse(c => { if (c.isMesh && c.material && c.userData._origColor !== undefined) { c.material.color.setHex(c.userData._origColor); } });
+                    }
+                });
+            }
+
+            // --- Static Field ---
+            if (passiveAuras.staticField > 0) {
+                const rank     = passiveAuras.staticField;
+                const dmg      = 15 + rank * 13;
+                const interval = Math.max(400, 2500 - rank * 350);
+                if (auraMeshes.staticField) {
+                    auraMeshes.staticField.rotation.z -= 0.05;
+                    auraMeshes.staticField.material.opacity = 0.5 + Math.sin(now * 0.01) * 0.4;
+                }
+                if (now - _lastStaticZap > interval) {
+                    _lastStaticZap = now;
+                    // Find nearest enemy
+                    let nearest = null, nearDist = Infinity;
+                    enemies.forEach(en => {
+                        const d = player.position.distanceTo(en.position);
+                        if (d < nearDist && d < 20) { nearDist = d; nearest = en; }
+                    });
+                    if (nearest) {
+                        nearest.userData.health -= dmg;
+                        if (nearest.userData.healthBarFill) {
+                            nearest.userData.healthBarFill.style.width = Math.max(0, nearest.userData.health / nearest.userData.maxHealth * 100) + '%';
+                        }
+                        // Lightning visual — flash the enemy yellow
+                        nearest.traverse(c => {
+                            if (c.isMesh && c.material) {
+                                const orig = c.material.color.getHex();
+                                c.material.color.setHex(0xffff44);
+                                setTimeout(() => { try { c.material.color.setHex(orig); } catch(e){} }, 80);
+                            }
+                        });
+                        spawnParticles(nearest.position.clone().add(new THREE.Vector3(0, 1, 0)), 6,
+                            { color: 0xffff00, size: 0.08, speed: 0.12, life: 12, explode: true });
+                        playSound(800 + Math.random()*400, 0.12, 'square', 0.06);
+                        if (nearest.userData.health <= 0) killEnemy(nearest);
+                    }
+                }
+            }
+        }
+
+        // =====================================================================
+        // WORLD CHESTS
+        // =====================================================================
+        function spawnChest(x, z) {
+            const group = new THREE.Group();
+            // Base box (chest body)
+            const bodyMat = new THREE.MeshStandardMaterial({ color: 0x8b5e1a, roughness: 0.6, metalness: 0.2 });
+            const body = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.55, 0.6), bodyMat);
+            body.position.y = 0.28;
+            body.castShadow = true;
+            group.add(body);
+            // Lid
+            const lidMat = new THREE.MeshStandardMaterial({ color: 0xa0721f, roughness: 0.5, metalness: 0.25 });
+            const lid = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.25, 0.6), lidMat);
+            lid.position.y = 0.68;
+            lid.castShadow = true;
+            group.add(lid);
+            // Gold lock
+            const lockMat = new THREE.MeshStandardMaterial({ color: 0xffd700, emissive: 0xcc9900, emissiveIntensity: 0.6, roughness: 0.3, metalness: 0.8 });
+            const lock = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.14, 0.08), lockMat);
+            lock.position.set(0, 0.48, 0.32);
+            group.add(lock);
+            // Glow orb above chest
+            const glowMat = new THREE.MeshStandardMaterial({ color: 0xffcc00, emissive: 0xffaa00, emissiveIntensity: 1.2, transparent: true, opacity: 0.75 });
+            const glow = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 8), glowMat);
+            glow.position.y = 1.15;
+            group.add(glow);
+            group.userData.glowMesh = glow;
+
+            group.position.set(x, 0, z);
+            group.userData.isChest = true;
+            group.userData.spawnTime = Date.now();
+            group.userData.opened = false;
+            // Pick a random attachment
+            group.userData.attachment = CHEST_ATTACHMENTS[Math.floor(Math.random() * CHEST_ATTACHMENTS.length)];
+            scene.add(group);
+            worldChests.push(group);
+            return group;
+        }
+
+        function openChest(chest) {
+            if (chest.userData.opened) return;
+            chest.userData.opened = true;
+            const att = chest.userData.attachment;
+
+            // Apply the attachment
+            att.apply();
+
+            // Burst particles
+            spawnParticles(chest.position.clone().add(new THREE.Vector3(0, 0.8, 0)), 20,
+                { color: att.color, size: 0.15, speed: 0.12, life: 30, explode: true });
+            spawnParticles(chest.position.clone().add(new THREE.Vector3(0, 0.5, 0)), 10,
+                { color: 0xffdd44, size: 0.1, speed: 0.08, life: 22, explode: true });
+            playSound(600, 0.25, 'sine', 0.15);
+            setTimeout(() => playSound(800, 0.2, 'sine', 0.12), 80);
+            setTimeout(() => playSound(1000, 0.15, 'sine', 0.1), 160);
+
+            // Toast notification
+            const toast = document.createElement('div');
+            toast.style.cssText = `position:absolute;top:38%;left:50%;transform:translate(-50%,-50%);
+                z-index:300;text-align:center;pointer-events:none;
+                background:rgba(0,0,0,0.85);border:2px solid #ffd700;border-radius:14px;
+                padding:14px 28px;box-shadow:0 0 24px rgba(255,200,0,0.5);`;
+            toast.innerHTML = `
+                <div style="color:#ffd700;font-size:13px;font-weight:900;letter-spacing:2px;margin-bottom:4px;">📦 CHEST OPENED</div>
+                <div style="font-size:26px;margin-bottom:4px;">${att.icon} ${att.name}</div>
+                <div style="color:rgba(255,255,255,0.65);font-size:13px;">${att.desc}</div>`;
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.style.transition = 'opacity 0.5s, transform 0.5s';
+                toast.style.opacity = '0';
+                toast.style.transform = 'translate(-50%, -80%)';
+                setTimeout(() => toast.remove(), 500);
+            }, 2500);
+
+            // Animate lid opening then remove
+            const lid = chest.children[1];
+            let t = 0;
+            const openAnim = setInterval(() => {
+                t += 0.08;
+                if (lid) lid.rotation.x = -Math.min(t, Math.PI / 2);
+                if (t >= Math.PI / 2) {
+                    clearInterval(openAnim);
+                    setTimeout(() => {
+                        scene.remove(chest);
+                        const idx = worldChests.indexOf(chest);
+                        if (idx > -1) worldChests.splice(idx, 1);
+                    }, 800);
+                }
+            }, 16);
+        }
+
+        function updateChests() {
+            if (!gameStarted) return;
+            const now = Date.now();
+            for (let i = worldChests.length - 1; i >= 0; i--) {
+                const chest = worldChests[i];
+                if (chest.userData.opened) continue;
+                // Bob and rotate glow
+                if (chest.userData.glowMesh) {
+                    chest.userData.glowMesh.position.y = 1.15 + Math.sin((now - chest.userData.spawnTime) * 0.003) * 0.12;
+                    chest.userData.glowMesh.rotation.y += 0.04;
+                }
+                // Pickup check
+                if (player.position.distanceTo(chest.position) < 1.6) {
+                    openChest(chest);
+                }
+            }
         }
 
         function animate() {
@@ -3875,6 +4390,8 @@ body{margin:0;overflow:hidden;background-color:#6eb1ff;font-family:'Segoe UI','R
             updatePowerUps();
             updateParticles();
             updateRagdolls();
+            updatePassiveAuras();
+            updateChests();
             updateMinimap();
             updateScreenShake();
             if (Date.now() % 30 < 2) checkAchievements(); // periodic poll
@@ -4034,13 +4551,18 @@ body{margin:0;overflow:hidden;background-color:#6eb1ff;font-family:'Segoe UI','R
                 const eHits = eRay.intersectObjects(collidables);
                 let isBlocked = (eHits.length > 0 && eHits[0].distance < 0.8);
 
+                // For flying enemies use flat XZ distance so height doesn't confuse movement/attack
+                const distXZ = en.userData.isFlying
+                    ? Math.sqrt(Math.pow(player.position.x - en.position.x, 2) + Math.pow(player.position.z - en.position.z, 2))
+                    : dist;
+
                 // Spitters / healers / ranged try to maintain preferred distance
                 if((type === 'spitter' || type === 'healer' || type === 'ranged') && dist < (en.userData.preferredDistance * 0.7)) {
                     const backDir = dirToPlayer.clone().negate();
                     en.position.add(new THREE.Vector3(backDir.x,0,backDir.z).multiplyScalar(en.userData.speed));
-                } else if(!isBlocked && dist > en.userData.attackRange) {
+                } else if(!isBlocked && distXZ > en.userData.attackRange) {
                     en.position.add(new THREE.Vector3(dirToPlayer.x,0,dirToPlayer.z).multiplyScalar(en.userData.speed));
-                } else if(isBlocked) {
+                } else if(isBlocked && !en.userData.isFlying) {
                     const rDir = new THREE.Vector3(-dirToPlayer.z,0,dirToPlayer.x).normalize();
                     const lDir = new THREE.Vector3(dirToPlayer.z,0,-dirToPlayer.x).normalize();
                     const rRay = new THREE.Raycaster(new THREE.Vector3(en.position.x,0.5,en.position.z), rDir);
@@ -4051,24 +4573,51 @@ body{margin:0;overflow:hidden;background-color:#6eb1ff;font-family:'Segoe UI','R
                     else if(!(lH.length > 0 && lH[0].distance < 0.8)) en.position.add(lDir.multiplyScalar(en.userData.speed * 0.7));
                 }
 
-                animateCharacter(en, !isBlocked && dist > en.userData.attackRange, false);
+                animateCharacter(en, !isBlocked && distXZ > en.userData.attackRange, false);
                 en.rotation.y = Math.atan2(dirToPlayer.x, dirToPlayer.z);
-                en.position.y += en.userData.vY; en.userData.vY -= 0.01;
-                const eDown = new THREE.Raycaster(new THREE.Vector3(en.position.x,en.position.y+1.2,en.position.z), new THREE.Vector3(0,-1,0));
-                const eHit2 = eDown.intersectObjects([...collidables, ...activeFloors]);
-                if(eHit2.length > 0 && eHit2[0].distance <= 1.25) { en.position.y=(en.position.y+1.2)-eHit2[0].distance; en.userData.vY=0; }
+                if(en.userData.isFlying) {
+                    // Swoop down to attack height when in range, rise back when not
+                    const swooping = distXZ < en.userData.attackRange * 2.5;
+                    const targetFlyY = swooping ? 1.2 : en.userData.flyHeight;
+                    en.userData.flyBobTime += en.userData.flyBobSpeed;
+                    const bob = swooping ? 0 : Math.sin(en.userData.flyBobTime) * en.userData.flyBobAmp;
+                    en.position.y += (targetFlyY + bob - en.position.y) * 0.08;
+                    // Wing flap — faster when swooping
+                    if(en.userData.wingLeft) {
+                        const flapSpeed = swooping ? 8 : 5;
+                        const flapAmp   = swooping ? 0.65 : 0.45;
+                        const flapAngle = Math.sin(en.userData.flyBobTime * flapSpeed) * flapAmp;
+                        en.userData.wingLeft.rotation.z  =  flapAngle;
+                        en.userData.wingRight.rotation.z = -flapAngle;
+                    }
+                } else {
+                    en.position.y += en.userData.vY; en.userData.vY -= 0.01;
+                    const eDown = new THREE.Raycaster(new THREE.Vector3(en.position.x,en.position.y+1.2,en.position.z), new THREE.Vector3(0,-1,0));
+                    const eHit2 = eDown.intersectObjects([...collidables, ...activeFloors]);
+                    if(eHit2.length > 0 && eHit2[0].distance <= 1.25) { en.position.y=(en.position.y+1.2)-eHit2[0].distance; en.userData.vY=0; }
+                }
 
                 updateUIHealthBar(en, 2.2 * en.scale.y);
 
-                // Melee damage to player
+                // Melee damage to player — flyers use XZ distance since they swoop to attack height
                 const meleeDist = en.userData.attackRange * en.scale.x;
-                if(dist < meleeDist && now - lastDamageTime > 1000 && type !== 'exploder' && !isPowerUpActive('invincible')) {
+                const meleeCheck = en.userData.isFlying ? distXZ : dist;
+                if(meleeCheck < meleeDist && now - lastDamageTime > 400 && type !== 'exploder' && !isPowerUpActive('invincible')) {
                     const rawDmg = en.userData.attackDamage || 20;
                     const dmg = takeDamage(rawDmg);
                     lastDamageTime = now; damageSound();
                     window._damageThisWave = true;
                     triggerScreenShake(en.userData.isBoss ? 9 : 5);
                     spawnDamageNumber(player.position.clone().add(new THREE.Vector3(0,2,0)), dmg, false);
+                    // Thorns — reflect damage back
+                    if (passiveAuras.thorns > 0) {
+                        const reflectPct = 0.25 + passiveAuras.thorns * 0.15;
+                        const reflectDmg = Math.round(rawDmg * reflectPct);
+                        en.userData.health -= reflectDmg;
+                        if (en.userData.healthBarFill) en.userData.healthBarFill.style.width = Math.max(0, en.userData.health / en.userData.maxHealth * 100) + '%';
+                        spawnParticles(en.position.clone().add(new THREE.Vector3(0, 1, 0)), 5, { color: 0xff0044, size: 0.09, speed: 0.1, life: 16, explode: true });
+                        if (en.userData.health <= 0) killEnemy(en);
+                    }
                 }
             });
 
@@ -4078,8 +4627,8 @@ body{margin:0;overflow:hidden;background-color:#6eb1ff;font-family:'Segoe UI','R
                 proj.position.add(proj.userData.velocity);
                 proj.userData.velocity.y += proj.userData.gravity;
                 proj.userData.life--;
-                if(proj.position.y < 0.2 || proj.userData.life <= 0) { scene.remove(proj); enemyProjectiles.splice(i,1); continue; }
-                if(proj.position.distanceTo(player.position) < 1.0) {
+                if(proj.position.y < -1.5 || proj.userData.life <= 0) { scene.remove(proj); enemyProjectiles.splice(i,1); continue; }
+                if(proj.position.distanceTo(player.position) < 1.3) {
                     if(!isPowerUpActive('invincible')) {
                         takeDamage(proj.userData.damage);
                         damageSound();
@@ -4162,6 +4711,36 @@ body{margin:0;overflow:hidden;background-color:#6eb1ff;font-family:'Segoe UI','R
                             document.body.appendChild(hs);
                             setTimeout(() => { hs.classList.add('indicator--fade-out','is-exiting'); hs.style.transform='translate(-50%,-100%)'; setTimeout(()=>hs.remove(),500); }, 100);
                             playSound(800, 0.2, 'sine', 0.15);
+                        }
+                        // ── Weapon attachment effects on hit ──────────────
+                        const bAtt = bullets[i] ? bullets[i].userData.attachment : null;
+                        if (bAtt === 'explosive') {
+                            // AoE explosion around hit point
+                            spawnExplosionParticles(hitPos.clone().add(new THREE.Vector3(0, 0.5, 0)));
+                            triggerScreenShake(4);
+                            enemies.forEach(nearby => {
+                                if (nearby !== en && nearby.position.distanceTo(en.position) < 3.5) {
+                                    const splashDmg = Math.round(dmg * 0.6);
+                                    nearby.userData.health -= splashDmg;
+                                    if (nearby.userData.healthBarFill) nearby.userData.healthBarFill.style.width = Math.max(0, nearby.userData.health / nearby.userData.maxHealth * 100) + '%';
+                                    if (nearby.userData.health <= 0) killEnemy(nearby);
+                                }
+                            });
+                        }
+                        if (bAtt === 'fire') {
+                            // DoT: 5 DPS for 3 seconds
+                            if (!en.userData._burning) {
+                                en.userData._burning = true;
+                                let ticks = 0;
+                                const burnId = setInterval(() => {
+                                    if (!en.parent || en.userData.health <= 0) { clearInterval(burnId); en.userData._burning = false; return; }
+                                    en.userData.health -= 5;
+                                    if (en.userData.healthBarFill) en.userData.healthBarFill.style.width = Math.max(0, en.userData.health / en.userData.maxHealth * 100) + '%';
+                                    spawnParticles(en.position.clone().add(new THREE.Vector3(0, 0.8, 0)), 2, { color: 0xff4400, size: 0.09, speed: 0.06, life: 14, explode: true });
+                                    if (en.userData.health <= 0) { killEnemy(en); clearInterval(burnId); en.userData._burning = false; }
+                                    if (++ticks >= 6) { clearInterval(burnId); en.userData._burning = false; }
+                                }, 500);
+                            }
                         }
                         scene.remove(bullets[i]); bullets.splice(i, 1);
                         if(en.userData.health <= 0) killEnemy(en);
